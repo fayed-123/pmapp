@@ -12,7 +12,7 @@ export interface User {
 }
 
 export interface Project {
-  id: string;
+  id?: string;
   name: string;
   desc?: string;
   start: string;
@@ -26,6 +26,7 @@ export interface Project {
   performance: number;
   created: string;
   expectedDays: number;
+  description: string;
 }
 
 export interface ProjectItem {

@@ -9,9 +9,9 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 
 interface UsersTabProps {
   users: User[];
-  onAddUser: (name: string, role: "owner" | "contractor" | "consultant", isMainConsultant?: boolean) => void;
-  onApproveUser: (userId: string) => void;
-  onDeleteUser: (userId: string) => void;
+  onAddUser: (name: string, role: "owner" | "contractor" | "consultant", isMainConsultant?: boolean) => Promise<void>;
+  onApproveUser: (userId: string) => Promise<void>;
+  onDeleteUser: (userId: string) => Promise<void>;
 }
 
 const UsersTab: React.FC<UsersTabProps> = ({ users, onAddUser, onApproveUser, onDeleteUser }) => {

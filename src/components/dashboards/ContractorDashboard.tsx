@@ -1,15 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { loadProjects, loadUsers, saveProjects, getUserNameById } from '@/lib/db';
+import { loadProjects, loadUsers, saveProject, getUserNameById, deleteProjectWithAllData } from '@/lib/db';
 import { Project } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import FormField from '@/components/FormField';
 import { useToast } from '@/components/ui/use-toast';
 import Modal from '@/components/Modal';
 import ProjectDetails from '../projects/ProjectDetails';
-import { deleteProject } from '@/lib/db';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -47,9 +45,13 @@ const getProjectStatus = (project: Project) => {
 const ContractorDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Projects);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
+
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [formData, setFormData] = useState({
     name: '',
     desc: '',
@@ -58,36 +60,102 @@ const ContractorDashboard: React.FC = () => {
     ownerId: '',
     consultantId: '',
   });
-  
+
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProjectDetails, setShowProjectDetails] = useState(false);
-  
-  const [owners, setOwners] = useState<{value: string, label: string}[]>([]);
-  const [consultants, setConsultants] = useState<{value: string, label: string}[]>([]);
+
+  const [owners, setOwners] = useState<{ value: string, label: string }[]>([]);
+  const [consultants, setConsultants] = useState<{ value: string, label: string }[]>([]);
 
   useEffect(() => {
-    if (user && user.id) {
-      loadProjectData();
+    let isCancelled = false;
+    
+    const loadDataSafely = async () => {
+      if (!user?.id || isCancelled) return;
       
-      // Load owners and consultants for the add project form
-      const users = loadUsers();
-      setOwners(
-        users
-          .filter(u => u.role === "owner" && u.approved)
-          .map(u => ({ value: u.id, label: u.name }))
-      );
-      setConsultants(
-        users
-          .filter(u => u.role === "consultant" && u.approved)
-          .map(u => ({ value: u.id, label: u.name }))
-      );
-    }
+      setIsLoading(true);
+      try {
+        // Load projects
+        const allProjects = await loadProjects();
+        if (isCancelled) return;
+        
+        const contractorProjects = allProjects.filter(p => p.contractorId === user.id);
+        setProjects(contractorProjects);
+  
+        // Load user names for the projects
+        const userIds = [...new Set([
+          ...contractorProjects.map(p => p.ownerId),
+          ...contractorProjects.map(p => p.consultantId)
+        ].filter(Boolean))]; // This will filter out null/undefined values
+  
+        const names: { [key: string]: string } = {};
+        for (const userId of userIds) {
+          if (isCancelled) return;
+          const userName = await getUserNameById(userId);
+          names[userId] = userName;
+        }
+        if (isCancelled) return;
+        setUserNames(names);
+  
+        // Load owners and consultants for the add project form
+        const users = await loadUsers();
+        if (isCancelled) return;
+        
+        setOwners(
+          users
+            .filter(u => u.role === "owner" && u.approved)
+            .map(u => ({ value: u.id, label: u.name }))
+        );
+        setConsultants(
+          users
+            .filter(u => u.role === "consultant" && u.approved)
+            .map(u => ({ value: u.id, label: u.name }))
+        );
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Error loading data:', error);
+          toast({
+            title: "خطأ",
+            description: "حدث خطأ أثناء تحميل البيانات",
+            variant: "destructive"
+          });
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+  
+    loadDataSafely();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [user]);
 
-  const loadProjectData = () => {
+  const loadProjectData = async () => {
     if (!user) return;
-    const contractorProjects = loadProjects().filter(p => p.contractorId === user.id);
-    setProjects(contractorProjects);
+    try {
+      const allProjects = await loadProjects();
+      const contractorProjects = allProjects.filter(p => p.contractorId === user.id);
+      setProjects(contractorProjects);
+
+      // Load user names for the projects
+      const userIds = [...new Set([
+        ...contractorProjects.map(p => p.ownerId),
+        ...contractorProjects.map(p => p.consultantId)
+      ].filter(Boolean))];
+
+      const names: { [key: string]: string } = {};
+      for (const userId of userIds) {
+        const user = await getUserNameById(userId);
+        names[userId] = user;
+      }
+      setUserNames(names);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    }
   };
 
   const handleFormChange = (e: any) => {
@@ -97,48 +165,67 @@ const ContractorDashboard: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+  
     if (!user) return;
-    
-    const newProject: Project = {
-      id: Date.now().toString(),
-      name: formData.name,
-      desc: formData.desc,
-      start: formData.start,
-      end: formData.end,
-      ownerId: formData.ownerId,
-      consultantId: formData.consultantId,
-      contractorId: user.id,
-      status: 'active',
-      completion: 0,
-      timeElapsed: 0,
-      performance: 0,
-      created: new Date().toISOString(),
-      expectedDays: 0
-    };
-    
-    const allProjects = loadProjects();
-    allProjects.push(newProject);
-    saveProjects(allProjects);
-    
-    toast({
-      title: "تم إنشاء المشروع",
-      description: "تم حفظ المشروع بنجاح",
-    });
-    
-    setFormData({
-      name: '',
-      desc: '',
-      start: '',
-      end: '',
-      ownerId: '',
-      consultantId: '',
-    });
-    
-    setActiveTab(Tab.Projects);
-    setProjects([...projects, newProject]);
+  
+    setIsSaving(true);
+  
+    try {
+      const newProject: Project = {
+        name: formData.name,
+        desc: formData.desc,
+        start: formData.start,
+        description: formData.desc,
+        end: formData.end,
+        ownerId: formData.ownerId,
+        consultantId: formData.consultantId,
+        contractorId: user.id,
+        status: 'active',
+        completion: 0,
+        timeElapsed: 0,
+        performance: 0,
+        created: new Date().toISOString(),
+        expectedDays: 0,
+      };
+  
+      const success = await saveProject(newProject);
+      if (success) {
+        toast({
+          title: "تم إنشاء المشروع",
+          description: "تم حفظ المشروع بنجاح",
+        });
+  
+        setFormData({
+          name: '',
+          desc: '',
+          start: '',
+          end: '',
+          ownerId: '',
+          consultantId: '',
+        });
+  
+        setActiveTab(Tab.Projects);
+        // Reload projects from database instead of manually adding
+        await loadProjectData();
+      } else {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء حفظ المشروع",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء المشروع",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleViewProject = (project: Project) => {
@@ -146,21 +233,30 @@ const ContractorDashboard: React.FC = () => {
     setShowProjectDetails(true);
   };
 
-  const handleCloseProjectDetails = () => {
+  const handleCloseProjectDetails = async () => {
     setShowProjectDetails(false);
     setSelectedProject(null);
     // Reload project data to reflect any changes
-    loadProjectData();
+    await loadProjectData();
   };
 
-  const handleDeleteProject = (projectId: string) => {
-    deleteProject(projectId);
-    loadProjectData();
-    
-    toast({
-      title: "تم حذف المشروع",
-      description: "تم حذف المشروع وجميع بياناته بنجاح",
-    });
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await deleteProjectWithAllData(projectId);
+      await loadProjectData();
+
+      toast({
+        title: "تم حذف المشروع",
+        description: "تم حذف المشروع وجميع بياناته بنجاح",
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف المشروع",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderContent = () => {
@@ -187,30 +283,30 @@ const ContractorDashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {projects.length > 0 ? (
-                    projects.map(project => (
-                      <tr key={project.id} className="border-t hover:bg-gray-50">
+                    projects.map((project, index) => (
+                      <tr key={project.id || `project-${index}`} className="border-t hover:bg-gray-50">
                         <td className="p-2">{project.name}</td>
-                        <td className="p-2">{getUserNameById(project.ownerId)}</td>
-                        <td className="p-2">{getUserNameById(project.consultantId)}</td>
+                        <td className="p-2">{userNames[project.ownerId] || '-'}</td>
+                        <td className="p-2">{userNames[project.consultantId] || '-'}</td>
                         <td className="p-2">{project.timeElapsed || 0} يوم</td>
                         <td className="p-2">{project.completion || 0}%</td>
                         <td className="p-2">{project.expectedDays || 0} يوم</td>
                         <td className="p-2">{getProjectStatus(project)}</td>
                         <td className="p-2 flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleViewProject(project)}
                             className="text-indigo-600 hover:text-indigo-800"
                           >
                             <i className="fa fa-eye ml-1" /> عرض
                           </Button>
-                          
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="text-red-600 hover:text-red-800"
                               >
                                 <i className="fa fa-trash ml-1" /> حذف
@@ -224,7 +320,7 @@ const ContractorDashboard: React.FC = () => {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="flex-row-reverse">
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   onClick={() => handleDeleteProject(project.id)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
@@ -249,7 +345,7 @@ const ContractorDashboard: React.FC = () => {
             </Card>
           </div>
         );
-        
+
       case Tab.AddProject:
         return (
           <div>
@@ -266,7 +362,7 @@ const ContractorDashboard: React.FC = () => {
                   onChange={handleFormChange}
                   required
                 />
-                
+
                 <FormField
                   label="الوصف"
                   name="desc"
@@ -274,7 +370,7 @@ const ContractorDashboard: React.FC = () => {
                   value={formData.desc}
                   onChange={handleFormChange}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     label="تاريخ البداية"
@@ -284,7 +380,7 @@ const ContractorDashboard: React.FC = () => {
                     onChange={handleFormChange}
                     required
                   />
-                  
+
                   <FormField
                     label="تاريخ النهاية المتوقعة"
                     name="end"
@@ -294,7 +390,7 @@ const ContractorDashboard: React.FC = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     label="المالك"
@@ -305,7 +401,7 @@ const ContractorDashboard: React.FC = () => {
                     onChange={handleFormChange}
                     required
                   />
-                  
+
                   <FormField
                     label="الاستشاري المشرف"
                     name="consultantId"
@@ -316,12 +412,13 @@ const ContractorDashboard: React.FC = () => {
                     required
                   />
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  className="bg-blue-600 hover:bg-blue-800 text-white px-8 py-2 rounded font-bold"
+
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="bg-blue-600 hover:bg-blue-800 text-white px-8 py-2 rounded font-bold disabled:opacity-50"
                 >
-                  حفظ المشروع
+                  {isSaving ? "جاري الحفظ..." : "حفظ المشروع"}
                 </Button>
               </form>
             </Card>
@@ -337,24 +434,24 @@ const ContractorDashboard: React.FC = () => {
       </h2>
       <hr className="mb-4" />
       <div className="flex flex-wrap gap-6 mb-6">
-        <Button 
-          variant={activeTab === Tab.Projects ? "default" : "outline"} 
+        <Button
+          variant={activeTab === Tab.Projects ? "default" : "outline"}
           onClick={() => setActiveTab(Tab.Projects)}
           className={`${activeTab === Tab.Projects ? 'bg-indigo-600' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
         >
           <i className="fa fa-layer-group ml-2" /> مشاريعي
         </Button>
-        <Button 
-          variant={activeTab === Tab.AddProject ? "default" : "outline"} 
+        <Button
+          variant={activeTab === Tab.AddProject ? "default" : "outline"}
           onClick={() => setActiveTab(Tab.AddProject)}
           className={`${activeTab === Tab.AddProject ? 'bg-indigo-600' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
         >
           <i className="fa fa-plus-circle ml-2" /> إنشاء مشروع جديد
         </Button>
       </div>
-      
+
       {renderContent()}
-      
+
       {/* Project Details Modal */}
       {selectedProject && user && (
         <Modal
@@ -363,10 +460,10 @@ const ContractorDashboard: React.FC = () => {
           title={`تفاصيل المشروع: ${selectedProject.name}`}
           size="xl"
         >
-          <ProjectDetails 
-            project={selectedProject} 
-            currentUser={user} 
-            onClose={handleCloseProjectDetails} 
+          <ProjectDetails
+            project={selectedProject}
+            currentUser={user}
+            onClose={handleCloseProjectDetails}
           />
         </Modal>
       )}

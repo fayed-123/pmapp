@@ -14,7 +14,7 @@ export {
 // Project related functions
 export {
   loadProjects,
-  saveProjects,
+  saveProject,
   getProjectById,
   deleteProject
 } from './projects';
@@ -22,14 +22,15 @@ export {
 // Project items related functions
 export {
   loadItems,
-  saveItems,
+  saveItem,
   deleteItemsByProjectId
 } from './items';
 
 // Contact related functions
 export {
   loadContacts,
-  saveContacts,
+  saveContact,
+  deleteContact,
   deleteContactsByProjectId
 } from './contacts';
 
@@ -39,19 +40,20 @@ export {
 } from './projectMetrics';
 
 // Delete project with all related data
-export function deleteProjectWithAllData(projectId: string): void {
+export async function deleteProjectWithAllData(projectId: string): Promise<void> {
   try {
+    // Import specific functions to avoid circular dependencies
     // Import specific functions to avoid circular dependencies
     const { deleteProject } = require('./projects');
     const { deleteItemsByProjectId } = require('./items');
     const { deleteContactsByProjectId } = require('./contacts');
-    
+
     // Delete related items and contacts first
-    deleteItemsByProjectId(projectId);
-    deleteContactsByProjectId(projectId);
-    
+    await deleteItemsByProjectId(projectId);
+    await deleteContactsByProjectId(projectId);
+
     // Finally delete the project
-    deleteProject(projectId);
+    await deleteProject(projectId);
   } catch (error) {
     console.error("Error deleting project with all data:", error);
   }

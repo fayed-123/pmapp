@@ -1,18 +1,31 @@
-
 import { useState, useEffect } from 'react';
 import { Contact } from '@/lib/types';
-import { loadContacts, saveContacts } from '@/lib/db';
+import { loadContacts, saveContact, deleteContact } from '@/lib/db';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useProjectContacts = (projectId: string) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
+  // Load contacts on mount and when projectId changes
   useEffect(() => {
-    setContacts(loadContacts().filter(c => c.projectId === projectId));
+    const loadProjectContacts = async () => {
+      setIsLoading(true);
+      try {
+        const allContacts = await loadContacts();
+        setContacts(allContacts.filter(c => c.projectId === projectId));
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProjectContacts();
   }, [projectId]);
 
-  const addContact = (newContact: Partial<Contact>) => {
+  const addContact = async (newContact: Partial<Contact>) => {
     const contact: Contact = {
       id: Date.now().toString(),
       projectId: projectId,
@@ -21,32 +34,53 @@ export const useProjectContacts = (projectId: string) => {
       role: newContact.role || '',
     };
     
-    const updatedContacts = [...contacts, contact];
-    setContacts(updatedContacts);
-    saveContacts([...loadContacts().filter(c => c.projectId !== projectId), ...updatedContacts]);
-    
-    toast({
-      title: "تمت الإضافة",
-      description: "تم إضافة جهة الاتصال بنجاح",
-    });
-    
-    return contact;
+    try {
+      const success = await saveContact(contact);
+      if (success) {
+        setContacts(prev => [...prev, contact]);
+        
+        toast({
+          title: "تمت الإضافة",
+          description: "تم إضافة جهة الاتصال بنجاح",
+        });
+        
+        return contact;
+      }
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة جهة الاتصال",
+        variant: "destructive"
+      });
+    }
   };
 
-  const deleteContact = (contactId: string) => {
-    const updatedContacts = contacts.filter(contact => contact.id !== contactId);
-    setContacts(updatedContacts);
-    saveContacts([...loadContacts().filter(c => c.projectId !== projectId), ...updatedContacts]);
-    
-    toast({
-      title: "تم الحذف",
-      description: "تم حذف جهة الاتصال بنجاح",
-    });
+  const deleteContactHandler = async (contactId: string) => {
+    try {
+      const success = await deleteContact(contactId);
+      if (success) {
+        setContacts(prev => prev.filter(contact => contact.id !== contactId));
+        
+        toast({
+          title: "تم الحذف",
+          description: "تم حذف جهة الاتصال بنجاح",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف جهة الاتصال",
+        variant: "destructive"
+      });
+    }
   };
 
   return {
     contacts,
+    isLoading,
     addContact,
-    deleteContact
+    deleteContact: deleteContactHandler
   };
 };

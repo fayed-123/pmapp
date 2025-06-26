@@ -1,22 +1,35 @@
-
 import { User } from '@/lib/types';
-import { loadUsers, saveUsers } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from '@/constants/auth';
 import { toast } from '@/hooks/use-toast';
 
 class UserService {
-  isMainConsultant(userId: string): boolean {
-    const users = loadUsers();
-    const user = users.find(u => u.id === userId);
-    return user?.role === 'mainConsultant' || !!user?.isMainConsultant;
+  async isMainConsultant(userId: string): Promise<boolean> {
+    try {
+      const { data: user } = await supabase
+        .from('users')
+        .select('role, is_main_consultant')
+        .eq('id', userId)
+        .single();
+      
+      return user?.role === 'mainConsultant' || !!user?.is_main_consultant;
+    } catch (error) {
+      console.error("Error checking main consultant:", error);
+      return false;
+    }
   }
 
-  addUser(name: string, role: "owner" | "contractor" | "consultant", isMainConsultant = false): boolean {
+  async addUser(name: string, role: "owner" | "contractor" | "consultant", isMainConsultant = false): Promise<boolean> {
     try {
-      const users = loadUsers();
+      // Check if user exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('name', name)
+        .eq('role', role)
+        .maybeSingle();
       
-      // Check if user with same name and role exists
-      if (users.find(u => u.name === name && u.role === role)) {
+      if (existingUser) {
         toast({
           title: "خطأ في إضافة المستخدم",
           description: "اسم المستخدم مستخدم بالفعل لنفس النوع.",
@@ -25,22 +38,21 @@ class UserService {
         return false;
       }
       
-      // Update role to mainConsultant if isMainConsultant is true
       const finalRole = (isMainConsultant && role === "consultant") ? "mainConsultant" : role;
       
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: name,
-        email: `${name.replace(/\s+/g, '').toLowerCase()}@example.com`, // Generate dummy email
-        phone: "0000000000", // Default phone
-        role: finalRole as any,
-        password: "password", // Default password
-        approved: true, // Auto-approve users added by consultant
-        isMainConsultant: isMainConsultant && (role === "consultant" || finalRole === "mainConsultant") // Only set true if explicitly a main consultant
-      };
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          name: name,
+          email: `${name.replace(/\s+/g, '').toLowerCase()}@example.com`,
+          phone: "0000000000",
+          role: finalRole,
+          password: "password",
+          approved: true,
+          is_main_consultant: isMainConsultant && (role === "consultant" || finalRole === "mainConsultant")
+        });
       
-      users.push(newUser);
-      saveUsers(users);
+      if (error) throw error;
       
       let roleText = "";
       switch(finalRole) {
@@ -57,6 +69,7 @@ class UserService {
       
       return true;
     } catch (error) {
+      console.error("Error adding user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء إضافة المستخدم",
@@ -66,12 +79,15 @@ class UserService {
     }
   }
 
-  deleteUser(userId: string): boolean {
+  async deleteUser(userId: string): Promise<boolean> {
     try {
-      const users = loadUsers();
+      // Get user first
+      const { data: userToDelete } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
-      // Check if user exists
-      const userToDelete = users.find(u => u.id === userId);
       if (!userToDelete) {
         toast({
           title: "خطأ",
@@ -81,11 +97,8 @@ class UserService {
         return false;
       }
       
-      // Don't allow deletion of main consultant with hardcoded name/email
-      if (
-        userToDelete.name === MAIN_CONSULTANT_NAME || 
-        userToDelete.email === MAIN_CONSULTANT_EMAIL
-      ) {
+      // Don't allow deletion of main consultant
+      if (userToDelete.name === MAIN_CONSULTANT_NAME || userToDelete.email === MAIN_CONSULTANT_EMAIL) {
         toast({
           title: "غير مسموح",
           description: "لا يمكن حذف الاستشاري الرئيسي الافتراضي",
@@ -94,8 +107,12 @@ class UserService {
         return false;
       }
       
-      const updatedUsers = users.filter(u => u.id !== userId);
-      saveUsers(updatedUsers);
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
       
       toast({
         title: "تم الحذف",
@@ -104,6 +121,7 @@ class UserService {
       
       return true;
     } catch (error) {
+      console.error("Error deleting user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء حذف المستخدم",
@@ -113,16 +131,30 @@ class UserService {
     }
   }
 
-  getUsers(): User[] {
-    return loadUsers();
+  async getUsers(): Promise<User[]> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error getting users:", error);
+      return [];
+    }
   }
 
-  approveUser(userId: string): boolean {
+  async approveUser(userId: string): Promise<boolean> {
     try {
-      const users = loadUsers();
-      const user = users.find(u => u.id === userId);
+      const { data: user, error: selectError } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single();
       
-      if (!user) {
+      if (selectError || !user) {
         toast({
           title: "خطأ",
           description: "المستخدم غير موجود",
@@ -131,8 +163,12 @@ class UserService {
         return false;
       }
       
-      user.approved = true;
-      saveUsers(users);
+      const { error } = await supabase
+        .from('users')
+        .update({ approved: true })
+        .eq('id', userId);
+      
+      if (error) throw error;
       
       toast({
         title: "تمت الموافقة",
@@ -141,6 +177,7 @@ class UserService {
       
       return true;
     } catch (error) {
+      console.error("Error approving user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء الموافقة على المستخدم",

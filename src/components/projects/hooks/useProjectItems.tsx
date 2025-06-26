@@ -1,23 +1,39 @@
-
 import { useState, useEffect } from 'react';
 import { ProjectItem, Project } from '@/lib/types';
-import { loadItems, saveItems, updateProjectCompletion } from '@/lib/db';
+import { loadItems, saveItem, updateProjectCompletion } from '@/lib/db';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useProjectItems = (projectId: string) => {
   const [items, setItems] = useState<ProjectItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
+  // Load items on mount and when projectId changes
   useEffect(() => {
-    setItems(loadItems().filter(i => i.projectId === projectId));
+    const loadProjectItems = async () => {
+      setIsLoading(true);
+      try {
+        const allItems = await loadItems();
+        setItems(allItems.filter(i => i.projectId === projectId));
+      } catch (error) {
+        console.error('Error loading items:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProjectItems();
   }, [projectId]);
 
+  // Update project completion when items change
   useEffect(() => {
-    updateProjectCompletion(projectId);
+    if (items.length > 0) {
+      updateProjectCompletion(projectId);
+    }
   }, [items, projectId]);
 
-  const addItem = (newItem: Partial<ProjectItem>) => {
-    // Ensure the startDate and endDate are valid
+  const addItem = async (newItem: Partial<ProjectItem>) => {
+    // Validation remains the same
     if (newItem.startDate && newItem.endDate) {
       const startDate = new Date(newItem.startDate);
       const endDate = new Date(newItem.endDate);
@@ -41,25 +57,35 @@ export const useProjectItems = (projectId: string) => {
       startDate: newItem.startDate || new Date().toISOString().split('T')[0],
       endDate: newItem.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       executionTime: newItem.executionTime || 7,
-      weight: 0, // Will be calculated when loaded
-      weightedProgress: 0 // Will be calculated when loaded
+      weight: 0,
+      weightedProgress: 0
     };
     
-    const updatedItems = [...items, item];
-    setItems(updatedItems);
-    saveItems([...loadItems().filter(i => i.projectId !== projectId), ...updatedItems]);
-    updateProjectCompletion(projectId);
-    
-    toast({
-      title: "تمت الإضافة",
-      description: "تم إضافة البند بنجاح",
-    });
-    
-    return item;
+    try {
+      const success = await saveItem(item);
+      if (success) {
+        setItems(prev => [...prev, item]);
+        await updateProjectCompletion(projectId);
+        
+        toast({
+          title: "تمت الإضافة",
+          description: "تم إضافة البند بنجاح",
+        });
+        
+        return item;
+      }
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة البند",
+        variant: "destructive"
+      });
+    }
   };
 
-  const updateItem = (updatedItem: ProjectItem) => {
-    // Ensure the startDate and endDate are valid
+  const updateItem = async (updatedItem: ProjectItem) => {
+    // Validation remains the same
     if (updatedItem.startDate && updatedItem.endDate) {
       const startDate = new Date(updatedItem.startDate);
       const endDate = new Date(updatedItem.endDate);
@@ -74,43 +100,88 @@ export const useProjectItems = (projectId: string) => {
       }
     }
     
-    const updatedItems = items.map(item => 
-      item.id === updatedItem.id ? updatedItem : item
-    );
-    
-    setItems(updatedItems);
-    saveItems([...loadItems().filter(i => i.projectId !== projectId), ...updatedItems]);
-    updateProjectCompletion(projectId);
-    
-    toast({
-      title: "تم التعديل",
-      description: "تم تعديل البند بنجاح",
-    });
-    
-    return true;
+    try {
+      const success = await saveItem(updatedItem);
+      if (success) {
+        setItems(prev => prev.map(item => 
+          item.id === updatedItem.id ? updatedItem : item
+        ));
+        await updateProjectCompletion(projectId);
+        
+        toast({
+          title: "تم التعديل",
+          description: "تم تعديل البند بنجاح",
+        });
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تعديل البند",
+        variant: "destructive"
+      });
+      return false;
+    }
   };
 
-  const deleteItem = (itemId: string) => {
-    const updatedItems = items.filter(item => item.id !== itemId);
-    setItems(updatedItems);
-    saveItems([...loadItems().filter(i => i.projectId !== projectId), ...updatedItems]);
-    updateProjectCompletion(projectId);
-    
-    toast({
-      title: "تم الحذف",
-      description: "تم حذف البند بنجاح",
-    });
+  const deleteItem = async (itemId: string) => {
+    try {
+      // Since we don't have a direct deleteItem function, we can use saveItem with a delete flag
+      // Or add a deleteItem function to the db layer
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase
+        .from('project_items')
+        .delete()
+        .eq('id', itemId);
+      
+      if (error) throw error;
+      
+      setItems(prev => prev.filter(item => item.id !== itemId));
+      await updateProjectCompletion(projectId);
+      
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف البند بنجاح",
+      });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف البند",
+        variant: "destructive"
+      });
+    }
   };
 
-  const importItems = (importedItems: ProjectItem[]) => {
-    const updatedItems = [...items, ...importedItems];
-    setItems(updatedItems);
-    saveItems([...loadItems().filter(i => i.projectId !== projectId), ...updatedItems]);
-    updateProjectCompletion(projectId);
+  const importItems = async (importedItems: ProjectItem[]) => {
+    try {
+      // Save each imported item
+      const savePromises = importedItems.map(item => saveItem(item));
+      await Promise.all(savePromises);
+      
+      setItems(prev => [...prev, ...importedItems]);
+      await updateProjectCompletion(projectId);
+      
+      toast({
+        title: "تم الاستيراد",
+        description: `تم استيراد ${importedItems.length} بند بنجاح`,
+      });
+    } catch (error) {
+      console.error('Error importing items:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء استيراد البنود",
+        variant: "destructive"
+      });
+    }
   };
 
   return {
     items,
+    isLoading,
     addItem,
     updateItem,
     deleteItem,

@@ -1,0 +1,82 @@
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT,
+  role TEXT NOT NULL CHECK (role IN ('consultant', 'client', 'admin')),
+  password TEXT NOT NULL,
+  approved BOOLEAN DEFAULT false,
+  is_main_consultant BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Projects table
+CREATE TABLE projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  start_date DATE,
+  end_date DATE,
+  completion INTEGER DEFAULT 0,
+  time_elapsed INTEGER DEFAULT 0,
+  expected_days INTEGER DEFAULT 30,
+  performance INTEGER DEFAULT 0,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Project items table
+CREATE TABLE project_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  start_date DATE,
+  end_date DATE,
+  progress INTEGER DEFAULT 0,
+  execution_time INTEGER DEFAULT 0,
+  weight DECIMAL DEFAULT 0,
+  weighted_progress DECIMAL DEFAULT 0,
+  risk_level TEXT CHECK (risk_level IN ('low', 'medium', 'high')) DEFAULT 'low',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Contacts table
+CREATE TABLE contacts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  role TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+
+-- Allow anonymous access to all tables
+CREATE POLICY "Allow anonymous access" ON users FOR ALL USING (true);
+CREATE POLICY "Allow anonymous access" ON projects FOR ALL USING (true);
+CREATE POLICY "Allow anonymous access" ON project_items FOR ALL USING (true);
+CREATE POLICY "Allow anonymous access" ON contacts FOR ALL USING (true);
+
+
+ALTER TABLE contacts DROP COLUMN email;
+
+-- Update the CHECK constraint to include all the roles used in your application
+ALTER TABLE users DROP CONSTRAINT users_role_check;
+
+ALTER TABLE users ADD CONSTRAINT users_role_check 
+CHECK (role IN ('consultant', 'mainConsultant', 'owner', 'contractor', 'client', 'admin'));
+
+INSERT INTO users (name, email, phone, role, password, approved, is_main_consultant)
+VALUES ('محمد الكاشف', 'mohamedelkashif1983@gmail.com', '0123456789', 'mainConsultant', '123456', true, true);
+
+
+mohamedelkash1983@gmail.com

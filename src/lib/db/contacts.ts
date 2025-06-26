@@ -1,29 +1,81 @@
-
+import { supabase } from '@/lib/supabase';
 import { Contact } from "../types";
 
-export function loadContacts(): Contact[] {
+export async function loadContacts(): Promise<Contact[]> {
   try {
-    return JSON.parse(localStorage.getItem('ppm_contacts') || "[]");
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error("Error loading contacts:", error);
     return [];
   }
 }
 
-export function saveContacts(contacts: Contact[]): void {
+export async function saveContact(contact: Contact): Promise<boolean> {
   try {
-    localStorage.setItem('ppm_contacts', JSON.stringify(contacts));
+    if (contact.id) {
+      // Update existing contact
+      const { error } = await supabase
+        .from('contacts')
+        .update({
+          project_id: contact.projectId,
+          name: contact.name,
+          phone: contact.phone,
+          role: contact.role
+        })
+        .eq('id', contact.id);
+      
+      if (error) throw error;
+    } else {
+      // Insert new contact
+      const { error } = await supabase
+        .from('contacts')
+        .insert({
+          project_id: contact.projectId,
+          name: contact.name,
+          phone: contact.phone,
+          role: contact.role
+        });
+      
+      if (error) throw error;
+    }
+    return true;
   } catch (error) {
-    console.error("Error saving contacts:", error);
+    console.error("Error saving contact:", error);
+    return false;
+  }
+}
+
+
+export async function deleteContact(contactId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', contactId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting contact:", error);
+    return false;
   }
 }
 
 // Function to delete contacts by project ID
-export function deleteContactsByProjectId(projectId: string): void {
+export async function deleteContactsByProjectId(projectId: string): Promise<void> {
   try {
-    const contacts = loadContacts();
-    const updatedContacts = contacts.filter(c => c.projectId !== projectId);
-    saveContacts(updatedContacts);
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('project_id', projectId);
+    
+    if (error) throw error;
   } catch (error) {
     console.error("Error deleting contacts by project ID:", error);
   }

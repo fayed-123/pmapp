@@ -1,4 +1,4 @@
-
+import { supabase } from "@/lib/supabase"; 
 import { User } from "../types";
 import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from "@/context/AuthContext";
 
@@ -6,28 +6,39 @@ import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from "@/context/AuthConte
 const genId = (): string => Date.now().toString() + Math.floor(Math.random() * 100000).toString();
 
 // User functions
-export function loadUsers(): User[] {
+export async function loadUsers(): Promise<User[]> {
   try {
-    const users = JSON.parse(localStorage.getItem('ppm_users') || "[]");
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
     
-    // First launch: create default consultant user
-    if (users.length === 0) {
-      const defaultUser = {
-        id: genId(),
-        name: MAIN_CONSULTANT_NAME,
-        email: MAIN_CONSULTANT_EMAIL,
-        phone: "0500000000",
-        role: "consultant" as const,
-        password: "123456",
-        approved: true,
-        isMainConsultant: true
-      };
+    if (error) throw error;
+    
+    // Convert database format to app format
+    const convertedUsers = (users || []).map(user => ({
+      ...user,
+      isMainConsultant: user.is_main_consultant
+    }));
+    
+    // Create default consultant if no users exist
+    if (convertedUsers.length === 0) {
+      await supabase
+        .from('users')
+        .insert({
+          name: MAIN_CONSULTANT_NAME,
+          email: MAIN_CONSULTANT_EMAIL,
+          phone: "0500000000",
+          role: "mainConsultant",
+          password: "123456",
+          approved: true,
+          is_main_consultant: true
+        });
       
-      localStorage.setItem('ppm_users', JSON.stringify([defaultUser]));
-      return [defaultUser];
+      return await loadUsers(); // Reload after insertion
     }
     
-    return users;
+    return convertedUsers;
   } catch (error) {
     console.error("Error loading users:", error);
     return [];
@@ -42,12 +53,31 @@ export function saveUsers(users: User[]): void {
   }
 }
 
-export function getUserById(id: string): User | undefined {
-  return loadUsers().find(user => user.id === id);
+export async function getUserById(id: string): Promise<User | undefined> {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !user) return undefined;
+    
+    return {
+      ...user,
+      isMainConsultant: user.is_main_consultant
+    };
+  } catch (error) {
+    console.error("Error getting user by ID:", error);
+    return undefined;
+  }
 }
 
-export function getUserNameById(id: string): string {
-  const user = getUserById(id);
+export async function getUserNameById(id: string): Promise<string> {
+  if (!id) {
+    return "-";
+  }
+  const user = await getUserById(id);
   return user ? user.name : "-";
 }
 

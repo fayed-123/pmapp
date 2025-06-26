@@ -1,12 +1,12 @@
 import { loadItems } from "./items";
-import { loadProjects, saveProjects } from "./projects";
+import { loadProjects, saveProject } from "./projects";
 
 // Update project completion
-export function updateProjectCompletion(projectId: string): void {
+export async function updateProjectCompletion(projectId: string): Promise<void> {
   try {
-    const projects = loadProjects();
+    const projects = await loadProjects();
     const project = projects.find(p => p.id === projectId);
-    const items = loadItems().filter(i => i.projectId === projectId);
+    const items = (await loadItems()).filter(i => i.projectId === projectId);
     
     if (!project || !items.length) return;
     
@@ -46,7 +46,7 @@ export function updateProjectCompletion(projectId: string): void {
     
     project.expectedDays = Math.max(1, expectedDays);
     
-    saveProjects(projects);
+    await saveProject(project);
   } catch (error) {
     console.error("Error updating project completion:", error);
   }

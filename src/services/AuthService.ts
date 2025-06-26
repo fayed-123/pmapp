@@ -1,67 +1,20 @@
 import { User } from '@/lib/types';
-import { loadUsers, saveUsers, setCurrentUser, getCurrentUser } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from '@/constants/auth';
 import { toast } from '@/hooks/use-toast';
 
 class AuthService {
-  login(nameOrEmail: string, role: string): User | null {
+  async login(nameOrEmail: string, role: string): Promise<User | null> {
     try {
-      const users = loadUsers();
+      // Query Supabase for user
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .or(`name.eq.${nameOrEmail},email.eq.${nameOrEmail}`)
+        .eq('role', role)
+        .single();
       
-      // Special case for main consultant login
-      if (nameOrEmail === MAIN_CONSULTANT_NAME || nameOrEmail === MAIN_CONSULTANT_EMAIL) {
-        const mainConsultant = users.find(u => 
-          u.name === MAIN_CONSULTANT_NAME || 
-          u.email === MAIN_CONSULTANT_EMAIL
-        );
-        
-        if (mainConsultant) {
-          // Ensure the role is updated to mainConsultant
-          if (mainConsultant.role !== "mainConsultant") {
-            mainConsultant.role = "mainConsultant";
-            mainConsultant.isMainConsultant = true;
-            saveUsers(users);
-          }
-          
-          setCurrentUser(mainConsultant);
-          
-          toast({
-            title: "تم تسجيل الدخول",
-            description: `مرحباً ${mainConsultant.name}`,
-          });
-          
-          // Show pending users to consultant
-          const pendingUsers = users.filter(u => 
-            !u.approved && 
-            u.name !== MAIN_CONSULTANT_NAME && 
-            u.email !== MAIN_CONSULTANT_EMAIL
-          );
-          
-          if (pendingUsers.length > 0) {
-            setTimeout(() => {
-              toast({
-                title: `${pendingUsers.length} طلبات تسجيل بانتظار الموافقة`,
-                description: "يرجى الانتقال إلى 'إدارة المستخدمين' للموافقة على الطلبات",
-                duration: 10000,
-              });
-            }, 1000);
-          }
-          
-          return mainConsultant;
-        }
-        
-        toast({
-          title: "خطأ في تسجيل الدخول",
-          description: "حساب الاستشاري الرئيسي غير موجود!",
-          variant: "destructive"
-        });
-        return null;
-      }
-      
-      // For all users, find by name and role
-      const user = users.find(u => u.name === nameOrEmail && u.role === role);
-      
-      if (!user) {
+      if (error || !user) {
         toast({
           title: "خطأ في تسجيل الدخول",
           description: "المستخدم غير موجود أو نوع المستخدم غير صحيح!",
@@ -79,12 +32,31 @@ class AuthService {
         return null;
       }
       
-      setCurrentUser(user);
+      // Store in session
+      sessionStorage.setItem('ppm_current_user', JSON.stringify(user));
       
       toast({
         title: "تم تسجيل الدخول",
         description: `مرحباً ${user.name}`,
       });
+      
+      // Check for pending users if main consultant
+      if (user.role === 'mainConsultant') {
+        const { data: pendingUsers } = await supabase
+          .from('users')
+          .select('*')
+          .eq('approved', false);
+        
+        if (pendingUsers && pendingUsers.length > 0) {
+          setTimeout(() => {
+            toast({
+              title: `${pendingUsers.length} طلبات تسجيل بانتظار الموافقة`,
+              description: "يرجى الانتقال إلى 'إدارة المستخدمين' للموافقة على الطلبات",
+              duration: 10000,
+            });
+          }, 1000);
+        }
+      }
       
       return user;
     } catch (error) {
@@ -98,11 +70,16 @@ class AuthService {
     }
   }
 
-  register(userData: Omit<User, 'id' | 'approved'>): boolean {
+  async register(userData: Omit<User, 'id' | 'approved'>): Promise<boolean> {
     try {
-      const users = loadUsers();
+      // Check if user exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', userData.email)
+        .single();
       
-      if (users.find(u => u.email === userData.email)) {
+      if (existingUser) {
         toast({
           title: "خطأ في التسجيل",
           description: "البريد الإلكتروني مستخدم بالفعل.",
@@ -111,36 +88,34 @@ class AuthService {
         return false;
       }
       
-      // If this is the main consultant name or email, automatically approve and set as main consultant
       const isMainConsultant = 
         userData.name === MAIN_CONSULTANT_NAME || 
         userData.email === MAIN_CONSULTANT_EMAIL;
       
-      const newUser: User = {
-        ...userData,
-        id: Date.now().toString(),
-        approved: isMainConsultant,
-        role: isMainConsultant ? 'mainConsultant' : userData.role,
-        isMainConsultant: isMainConsultant
-      };
-      
-      users.push(newUser);
-      saveUsers(users);
-      
-      if (isMainConsultant) {
-        toast({
-          title: "تم التسجيل بنجاح",
-          description: "تم تفعيل حسابك كاستشاري رئيسي. يمكنك تسجيل الدخول الآن.",
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          role: isMainConsultant ? 'mainConsultant' : userData.role,
+          password: userData.password,
+          approved: isMainConsultant,
+          is_main_consultant: isMainConsultant
         });
-      } else {
-        toast({
-          title: "تم التسجيل بنجاح",
-          description: "يرجى انتظار موافقة الاستشاري الرئيسي على الحساب.",
-        });
-      }
+      
+      if (error) throw error;
+      
+      toast({
+        title: "تم التسجيل بنجاح",
+        description: isMainConsultant 
+          ? "تم تفعيل حسابك كاستشاري رئيسي. يمكنك تسجيل الدخول الآن."
+          : "يرجى انتظار موافقة الاستشاري الرئيسي على الحساب.",
+      });
       
       return true;
     } catch (error) {
+      console.error("Registration error:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء التسجيل",
@@ -151,41 +126,39 @@ class AuthService {
   }
 
   logout(): void {
-    setCurrentUser(null);
+    sessionStorage.removeItem('ppm_current_user');
   }
 
-  ensureMainConsultantExists(): void {
-    const users = loadUsers();
-    const mainConsultant = users.find(u => 
-      u.name === MAIN_CONSULTANT_NAME || 
-      u.email === MAIN_CONSULTANT_EMAIL
-    );
-    
-    if (!mainConsultant) {
-      const newMainConsultant: User = {
-        id: Date.now().toString(),
-        name: MAIN_CONSULTANT_NAME,
-        email: MAIN_CONSULTANT_EMAIL,
-        phone: "0123456789",
-        role: "mainConsultant",
-        password: "123456", // Simple default password
-        approved: true,
-        isMainConsultant: true, // Mark as main consultant
-      };
+  async ensureMainConsultantExists(): Promise<void> {
+    try {
+      const { data: mainConsultant } = await supabase
+        .from('users')
+        .select('*')
+        .or(`name.eq.${MAIN_CONSULTANT_NAME},email.eq.${MAIN_CONSULTANT_EMAIL}`)
+        .single();
       
-      users.push(newMainConsultant);
-      saveUsers(users);
-    } else if (mainConsultant.role !== "mainConsultant") {
-      // Update existing main consultant to have the proper role
-      mainConsultant.role = "mainConsultant";
-      mainConsultant.isMainConsultant = true;
-      saveUsers(users);
+      if (!mainConsultant) {
+        await supabase
+          .from('users')
+          .insert({
+            name: MAIN_CONSULTANT_NAME,
+            email: MAIN_CONSULTANT_EMAIL,
+            phone: "0123456789",
+            role: "mainConsultant",
+            password: "123456",
+            approved: true,
+            is_main_consultant: true
+          });
+      }
+    } catch (error) {
+      console.error("Error ensuring main consultant exists:", error);
     }
   }
 
   getCurrentUser(): User | null {
     try {
-      return getCurrentUser();
+      const userStr = sessionStorage.getItem('ppm_current_user');
+      return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
       console.error("Error getting current user:", error);
       return null;
