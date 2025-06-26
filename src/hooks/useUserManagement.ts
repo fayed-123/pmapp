@@ -1,16 +1,20 @@
-
 import { userService } from '@/services/UserService';
 import { User } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
 export function useUserManagement() {
-  const isMainConsultant = (userId: string): boolean => {
-    return userService.isMainConsultant(userId);
+  const isMainConsultant = async (userId: string): Promise<boolean> => {
+    try {
+      return await userService.isMainConsultant(userId);
+    } catch (error) {
+      console.error('Is main consultant error:', error);
+      return false;
+    }
   };
 
-  const addUser = (name: string, role: "owner" | "contractor" | "consultant", isMainConsultant = false): boolean => {
+  const addUser = async (name: string, role: "owner" | "contractor" | "consultant", isMainConsultant = false): Promise<boolean> => {
     try {
-      return userService.addUser(name, role, isMainConsultant);
+      return await userService.addUser(name, role, isMainConsultant);
     } catch (error) {
       console.error('Add user error:', error);
       toast({
@@ -22,9 +26,9 @@ export function useUserManagement() {
     }
   };
 
-  const deleteUser = (userId: string): boolean => {
+  const deleteUser = async (userId: string): Promise<boolean> => {
     try {
-      return userService.deleteUser(userId);
+      return await userService.deleteUser(userId);
     } catch (error) {
       console.error('Delete user error:', error);
       toast({
@@ -36,9 +40,9 @@ export function useUserManagement() {
     }
   };
 
-  const getUsers = (): User[] => {
+  const getUsers = async (): Promise<User[]> => {
     try {
-      return userService.getUsers();
+      return await userService.getUsers();
     } catch (error) {
       console.error('Get users error:', error);
       toast({
@@ -50,9 +54,9 @@ export function useUserManagement() {
     }
   };
 
-  const approveUser = (userId: string): boolean => {
+  const approveUser = async (userId: string): Promise<boolean> => {
     try {
-      return userService.approveUser(userId);
+      return await userService.approveUser(userId);
     } catch (error) {
       console.error('Approve user error:', error);
       toast({

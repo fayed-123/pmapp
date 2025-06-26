@@ -1,11 +1,11 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Project } from '@/lib/types';
 import { getUserNameById } from '@/lib/db';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface ProjectsListTabProps {
   projects: Project[];
@@ -14,6 +14,44 @@ interface ProjectsListTabProps {
 }
 
 const ProjectsListTab: React.FC<ProjectsListTabProps> = ({ projects, onViewProject, onDeleteProject }) => {
+  const [userNames, setUserNames] = useState<{[key: string]: string}>({});
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  
+  useEffect(() => {
+    const loadUserNames = async () => {
+      setIsLoadingUsers(true);
+      try {
+        // Get unique user IDs from projects
+        const userIds = [...new Set([
+          ...projects.map(p => p.contractorId),
+          ...projects.map(p => p.ownerId),
+          ...projects.map(p => p.consultantId)
+        ].filter(Boolean))]; // Filter out null/undefined values
+
+        const names: {[key: string]: string} = {};
+        
+        // Load names for each user ID
+        for (const userId of userIds) {
+          if (userId) {
+            const userName = await getUserNameById(userId);
+            names[userId] = userName;
+          }
+        }
+        
+        setUserNames(names);
+      } catch (error) {
+        console.error('Error loading user names:', error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    if (projects.length > 0) {
+      loadUserNames();
+    } else {
+      setIsLoadingUsers(false);
+    }
+  }, [projects]);
   
   const getProjectStatus = (project: Project) => {
     if (project.completion > 0 && project.timeElapsed > 0 && project.expectedDays > 0) {
@@ -26,6 +64,12 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({ projects, onViewProje
       return <span className="text-blue-600">مطابق</span>;
     }
     return "-";
+  };
+
+  const getUserDisplayName = (userId: string | null | undefined) => {
+    if (!userId) return '-';
+    if (isLoadingUsers) return 'جاري التحميل...';
+    return userNames[userId] || 'غير معروف';
   };
 
   return (
@@ -49,15 +93,15 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({ projects, onViewProje
           </TableHeader>
           <TableBody>
             {projects.length > 0 ? (
-              projects.map(project => (
-                <TableRow key={project.id} className="border-t hover:bg-gray-50">
+              projects.map((project, index) => (
+                <TableRow key={project.id || `project-${index}`} className="border-t hover:bg-gray-50">
                   <TableCell>{project.name}</TableCell>
                   <TableCell>{project.completion || 0}%</TableCell>
                   <TableCell>{project.timeElapsed || 0} يوم</TableCell>
                   <TableCell>{project.expectedDays || 0} يوم</TableCell>
                   <TableCell>{getProjectStatus(project)}</TableCell>
-                  <TableCell>{getUserNameById(project.contractorId)}</TableCell>
-                  <TableCell>{getUserNameById(project.ownerId)}</TableCell>
+                  <TableCell>{getUserDisplayName(project.contractorId)}</TableCell>
+                  <TableCell>{getUserDisplayName(project.ownerId)}</TableCell>
                   <TableCell className="flex gap-2">
                     <Button 
                       variant="ghost" 
@@ -67,14 +111,35 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({ projects, onViewProje
                     >
                       <i className="fa fa-eye ml-1" /> عرض
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => onDeleteProject(project.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <i className="fa fa-trash ml-1" /> حذف
-                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <i className="fa fa-trash ml-1" /> حذف
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rtl:text-right">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>حذف المشروع</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            هل أنت متأكد من حذف المشروع "{project.name}"؟ سيتم حذف جميع البيانات المرتبطة به ولا يمكن استعادتها.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex-row-reverse">
+                          <AlertDialogAction 
+                            onClick={() => onDeleteProject(project.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            حذف
+                          </AlertDialogAction>
+                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))
