@@ -79,4 +79,4 @@ INSERT INTO users (name, email, phone, role, password, approved, is_main_consult
 VALUES ('محمد الكاشف', 'mohamedelkashif1983@gmail.com', '0123456789', 'mainConsultant', '123456', true, true);
 
 
-mohamedelkash1983@gmail.com
+mohamedelkashif1983@gmail.com
