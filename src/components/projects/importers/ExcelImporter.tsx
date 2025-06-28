@@ -6,6 +6,7 @@ import { processExcelData } from '@/utils/fileImport';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/lib/supabase'; // Import your Supabase client
 
 interface ExcelImporterProps {
   projectId: string;
@@ -104,41 +105,24 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
         throw new Error("لم يتم العثور على بيانات صالحة للاستيراد في الملف");
       }
       
+      updateProgress(90, 'جاري حفظ البيانات في قاعدة البيانات...');
+      
+      // Save to Supabase in batches
+      await saveItemsToSupabase(processedItems, updateProgress);
+      
       updateProgress(100, `تم استيراد ${processedItems.length} بند بنجاح`);
       
       // Allow UI to update before completing
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Import smaller batches at a time to prevent overloading
-      const batchSize = 50;
-      // if (processedItems.length > batchSize) {
-      //   // Import in chunks to avoid freezing the UI
-      //   for (let i = 0; i < processedItems.length; i += batchSize) {
-      //     const batch = processedItems.slice(i, i + batchSize);
-      //     // Only call onImportComplete for the first batch
-      //     if (i === 0) {
-      //       onImportComplete(batch);
-      //     } else {
-      //       // For subsequent batches, use a direct save method
-      //       // You'd need to implement a method to save items directly without triggering completion updates
-      //       await saveItemsBatch(batch);
-      //     }
-      //     await new Promise(resolve => setTimeout(resolve, 50));
-      //   }
-        
-      //   toast({
-      //     title: "تم الاستيراد",
-      //     description: `تم استيراد ${processedItems.length} بند من ملف الإكسل بنجاح`,
-      //   });
-      // } else {
-        // For smaller sets, import all at once
-        onImportComplete(processedItems);
-        
-        toast({
-          title: "تم الاستيراد",
-          description: `تم استيراد ${processedItems.length} بند من ملف الإكسل بنجاح`,
-        });
-      // }
+      // Call completion callback with the processed items
+      onImportComplete(processedItems);
+      
+      toast({
+        title: "تم الاستيراد",
+        description: `تم استيراد ${processedItems.length} بند من ملف الإكسل بنجاح`,
+      });
+
     } catch (error) {
       console.error('Error importing Excel:', error);
       const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف';
@@ -160,23 +144,75 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
     }
   };
 
-  // Function to save items without triggering update calculations
-  // You would need to implement this based on your storage mechanism
-  const saveItemsBatch = async (items: ProjectItem[]): Promise<void> => {
-    // This is a placeholder - implement according to your storage pattern
+  // Function to save items to Supabase in batches
+  const saveItemsToSupabase = async (
+    items: ProjectItem[], 
+    progressCallback: (value: number, message: string) => void
+  ): Promise<void> => {
+    const batchSize = 100; // Supabase can handle larger batches efficiently
+    const totalItems = items.length;
+    
     try {
-      // Get existing items
-      const existingItems = JSON.parse(localStorage.getItem('ppm_items') || "[]");
-      // Filter out items with same projectId (if needed)
-      const filteredItems = existingItems.filter((i: any) => i.projectId !== projectId);
-      // Add new items
-      const updatedItems = [...filteredItems, ...items];
-      // Save directly to localStorage without triggering calculations
-      localStorage.setItem('ppm_items', JSON.stringify(updatedItems));
+      // First, delete existing items for this project if needed
+      // Uncomment this if you want to replace existing data
+      // const { error: deleteError } = await supabase
+      //   .from('project_items') // Replace with your actual table name
+      //   .delete()
+      //   .eq('project_id', projectId);
+      
+      // if (deleteError) {
+      //   throw new Error(`خطأ في حذف البيانات السابقة: ${deleteError.message}`);
+      // }
+
+      // Insert items in batches
+      for (let i = 0; i < totalItems; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        const endIndex = Math.min(i + batchSize, totalItems);
+        
+        // Transform items to match your Supabase table structure
+        const supabaseItems = batch.map(item => ({
+          // Map ProjectItem properties to Supabase columns
+          id: item.id,
+          project_id: item.projectId,
+          item_number: item.itemNumber,
+          name: item.name,
+          progress: item.progress,
+          weight: item.weight,
+          start_date: item.startDate,
+          end_date: item.endDate,
+          execution_time: item.executionTime,
+          weighted_progress: item.weightedProgress,
+          risk_level: item.riskLevel || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+        const { data, error } = await supabase
+          .from('project_items') // Replace with your actual table name
+          .insert(supabaseItems)
+          .select();
+
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw new Error(`خطأ في حفظ البيانات: ${error.message}`);
+        }
+
+        // Update progress
+        const savedCount = Math.min(endIndex, totalItems);
+        const progressPercent = 90 + Math.round((savedCount / totalItems) * 10);
+        progressCallback(
+          progressPercent,
+          `تم حفظ ${savedCount} من ${totalItems} بند`
+        );
+
+        // Small delay to prevent overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
     } catch (error) {
-      console.error("Error saving items batch:", error);
+      console.error('Error saving to Supabase:', error);
+      throw new Error(`فشل في حفظ البيانات: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
     }
-    return new Promise(resolve => setTimeout(resolve, 10));
   };
 
   // Promise-based file reader
@@ -213,7 +249,7 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
     projectId: string, 
     progressCallback: (value: number, message: string) => void
   ): Promise<ProjectItem[]> => {
-    const batchSize = 25; // karim
+    const batchSize = 25;
     const dataRows = rows.slice(1); // Remove header row once
     const totalRows = dataRows.length;
     let processedItems: ProjectItem[] = [];
@@ -241,10 +277,10 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
         
         // Update progress (more accurate calculation)
         const processedCount = Math.min(endIndex, totalRows);
-        const percentComplete = Math.round(80 + ((processedCount / totalRows) * 20));
+        const percentComplete = Math.round(80 + ((processedCount / totalRows) * 10));
         progressCallback(
-          Math.min(99, percentComplete), 
-          `تمت معالجة ${processedCount} من ${totalRows} صف (${Math.min(99, percentComplete)}%)`
+          Math.min(89, percentComplete), 
+          `تمت معالجة ${processedCount} من ${totalRows} صف`
         );
         
       } catch (error) {
