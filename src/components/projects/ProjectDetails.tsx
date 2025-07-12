@@ -307,6 +307,8 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({ subcontra
     analysisData,
     generalConsultants
   } = useProject();
+  console.log("canEdit:", canEdit, "canReview:", canReview);
+
    const [selectedSubcontractorId, setSelectedSubcontractorId] = useState<string>(
     (project as any).subcontractor_id || ""
   );
