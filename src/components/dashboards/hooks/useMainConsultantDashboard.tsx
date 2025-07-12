@@ -1,12 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { loadProjects, loadUsers, saveProject, deleteProjectWithAllData, getUserNameById } from '@/lib/db';
-import { useToast } from '@/components/ui/use-toast';
-import { Project, User } from '@/lib/types';
-import { useAuth } from '@/context/AuthContext';
-import { useUserManagement } from '@/hooks/useUserManagement';
-import { Tab } from '../types/dashboardTypes';
-import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from '@/constants/auth';
-import { userService } from '@/services/UserService';
+import { useState, useEffect, useRef } from "react";
+import {
+  loadProjects,
+  loadUsers,
+  saveProject,
+  deleteProjectWithAllData,
+  getUserNameById,
+} from "@/lib/db";
+import { useToast } from "@/components/ui/use-toast";
+import { Project, User } from "@/lib/types";
+import { useAuth } from "@/context/AuthContext";
+import { useUserManagement } from "@/hooks/useUserManagement";
+import { Tab } from "../types/dashboardTypes";
+import { MAIN_CONSULTANT_NAME, MAIN_CONSULTANT_EMAIL } from "@/constants/auth";
+import { userService } from "@/services/UserService";
 
 export const useMainConsultantDashboard = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Projects);
@@ -15,49 +21,100 @@ export const useMainConsultantDashboard = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [userNames, setUserNames] = useState<{[key: string]: string}>({});
+  const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
   const { toast } = useToast();
   const { user: currentUser, addUser, deleteUser } = useAuth();
   const shownPendingRef = useRef<string[]>([]);
-  
+
   // User management custom hook
   const userManagement = useUserManagement();
 
   useEffect(() => {
-    loadData();
-  }, [activeTab]);
+    if (currentUser) {
+      loadData();
+    }
+    console.log("Current User:", currentUser);
+  }, [currentUser]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      if (activeTab === Tab.Projects) {
-        const allProjects = await loadProjects();
-        setProjects(allProjects);
-        
-        // Load user names for projects
-        const userIds = [...new Set([
-          ...allProjects.map(p => p.ownerId),
-          ...allProjects.map(p => p.consultantId),
-          ...allProjects.map(p => p.contractorId)
-        ].filter(Boolean))];
-        
-        const names: {[key: string]: string} = {};
-        for (const userId of userIds) {
-          const userName = await getUserNameById(userId);
-          names[userId] = userName;
-        }
-        setUserNames(names);
-      } else if (activeTab === Tab.Users || activeTab === Tab.Consultants || activeTab === Tab.Stats) {
-        // Load users for user management tabs and stats
-        const allUsers = await loadUsers();
-        setUsers(allUsers.sort((a, b) => a.role.localeCompare(b.role)));
+const loadData = async () => {
+  console.log("Current User:", currentUser);
+  setIsLoading(true);
+  try {
+    const allProjects = await loadProjects();
+    console.log("All projects loaded:", allProjects);
+
+    allProjects.forEach((project) => {
+      console.log(
+        `Project: ${project.name}, mainConsultantId: ${project.mainConsultantId}, ownerId: ${project.ownerId}`
+      );
+    });
+
+    let filteredProjects = allProjects;
+
+    if (currentUser?.role === "mainConsultant") {
+      filteredProjects = allProjects.filter((project) => {
+        const match =
+          project.mainConsultantId === currentUser.id ||
+          project.ownerId === currentUser.id;
+        console.log(
+          `Filtering project ${project.name}: mainConsultantId=${project.mainConsultantId}, ownerId=${project.ownerId}, matches=${match}`
+        );
+        return match;
+      });
+    } else if (currentUser?.role === "generalConsultant") {
+      filteredProjects = allProjects.filter((project) => {
+        const match = project.generalConsultantId === currentUser.id;
+        console.log(
+          `Filtering project ${project.name}: generalConsultantId=${project.generalConsultantId}, matches=${match}`
+        );
+        return match;
+      });
+    }
+
+    console.log("Filtered projects:", filteredProjects);
+
+      // جمع معرفات المستخدمين
+      const userIds = [
+        ...new Set(
+          [
+            ...filteredProjects.map((p) => p.ownerId),
+            ...filteredProjects.map((p) => p.consultantId),
+            ...filteredProjects.map((p) => p.contractorId),
+            ...filteredProjects.map((p) => p.generalConsultantId),
+            ...filteredProjects.map((p) => p.mainConsultantId),
+          ].filter(Boolean)
+        ),
+      ];
+
+      // تحميل أسماء المستخدمين
+      const names: { [key: string]: string } = {};
+      for (const userId of userIds) {
+        const userName = await getUserNameById(userId);
+        names[userId] = userName;
       }
+      setUserNames(names);
+
+      // دمج الأسماء داخل المشاريع
+      const projectsWithNames = filteredProjects.map((project) => ({
+        ...project,
+        ownerName: names[project.ownerId] || "-",
+        consultantName: names[project.consultantId] || "-",
+        contractorName: names[project.contractorId] || "-",
+        generalConsultantName: names[project.generalConsultantId] || "-",
+        mainConsultantName: names[project.mainConsultantId] || "-",
+      }));
+
+      setProjects(projectsWithNames);
+
+      // تحميل جميع المستخدمين
+      const allUsers = await loadUsers();
+      setUsers(allUsers.sort((a, b) => a.role.localeCompare(b.role)));
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("Error loading data:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تحميل البيانات",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -65,32 +122,33 @@ export const useMainConsultantDashboard = () => {
   };
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'mainConsultant') return;
-    
+    if (!currentUser || currentUser.role !== "mainConsultant") return;
+
     const checkPendingUsers = async () => {
       try {
         const allUsers = await loadUsers();
-        const pending = allUsers.filter(u => 
-          !u.approved && 
-          u.name !== MAIN_CONSULTANT_NAME && 
-          u.email !== MAIN_CONSULTANT_EMAIL
+        const pending = allUsers.filter(
+          (u) =>
+            !u.approved &&
+            u.name !== MAIN_CONSULTANT_NAME &&
+            u.email !== MAIN_CONSULTANT_EMAIL
         );
-        
-        pending.forEach(u => {
+
+        pending.forEach((u) => {
           if (!shownPendingRef.current.includes(u.id)) {
             toast({
               title: "طلب موافقة مستخدم جديد",
               description: `المستخدم "${u.name}" بحاجة للموافقة.`,
-              variant: "default"
+              variant: "default",
             });
             shownPendingRef.current.push(u.id);
           }
         });
       } catch (error) {
-        console.error('Error checking pending users:', error);
+        console.error("Error checking pending users:", error);
       }
     };
-    
+
     checkPendingUsers();
   }, [currentUser, users, toast]);
 
@@ -102,11 +160,11 @@ export const useMainConsultantDashboard = () => {
         setUsers(updatedUsers.sort((a, b) => a.role.localeCompare(b.role)));
       }
     } catch (error) {
-      console.error('Error approving user:', error);
+      console.error("Error approving user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء الموافقة على المستخدم",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -114,45 +172,62 @@ export const useMainConsultantDashboard = () => {
   const handleDeleteProject = async (projectId: string) => {
     try {
       await deleteProjectWithAllData(projectId);
-      const updatedProjects = await loadProjects();
-      setProjects(updatedProjects);
-      
+      await loadData();
+
       toast({
         title: "تم الحذف",
         description: "تم حذف المشروع وجميع بياناته بنجاح",
       });
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error("Error deleting project:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء حذف المشروع",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const handleAddUser = async (name: string, role: "owner" | "contractor" | "consultant", isMainConsultant = false) => {
+  const handleAddUser = async (
+    name: string,
+    role:
+      | "owner"
+      | "contractor"
+      | "consultant"
+      | "generalConsultant"
+      | "mainConsultant",
+    isMainConsultant = false
+  ) => {
     if (!name.trim()) {
       toast({
         title: "خطأ",
         description: "يرجى إدخال اسم المستخدم",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     try {
-      const success = await addUser(name, role as any, isMainConsultant);
+      // إذا كان الدور "mainConsultant" فنعامله كاستشاري رئيسي
+      let baseRole = role;
+      let mainConsultantFlag = isMainConsultant;
+
+      if (role === "mainConsultant") {
+        baseRole = "consultant";
+        mainConsultantFlag = true;
+      }
+
+      const success = await addUser(name, baseRole as any, mainConsultantFlag);
       if (success) {
         const updatedUsers = await loadUsers();
         setUsers(updatedUsers.sort((a, b) => a.role.localeCompare(b.role)));
       }
     } catch (error) {
-      console.error('Error adding user:', error);
+      console.error("Error adding user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء إضافة المستخدم",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -165,12 +240,11 @@ export const useMainConsultantDashboard = () => {
   const handleCloseProjectDetails = async () => {
     setShowProjectDetails(false);
     setSelectedProject(null);
-    
+
     try {
-      const updatedProjects = await loadProjects();
-      setProjects(updatedProjects);
+      await loadData();
     } catch (error) {
-      console.error('Error reloading projects:', error);
+      console.error("Error reloading projects:", error);
     }
   };
 
@@ -182,11 +256,23 @@ export const useMainConsultantDashboard = () => {
         setUsers(updatedUsers.sort((a, b) => a.role.localeCompare(b.role)));
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء حذف المستخدم",
-        variant: "destructive"
+        variant: "destructive",
+      });
+    }
+  };
+  const handleProjectCreated = async () => {
+    try {
+      await loadData();
+    } catch (error) {
+      console.error("Error loading projects after creation:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث قائمة المشاريع",
+        variant: "destructive",
       });
     }
   };
@@ -206,6 +292,7 @@ export const useMainConsultantDashboard = () => {
     handleViewProject,
     handleCloseProjectDetails,
     handleDeleteUser,
-    currentUser
+    currentUser,
+    handleProjectCreated,
   };
 };

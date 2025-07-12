@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import ConsultantDashboard from '@/components/dashboards/ConsultantDashboard';
 import OwnerDashboard from '@/components/dashboards/OwnerDashboard';
 import ContractorDashboard from '@/components/dashboards/ContractorDashboard';
+import GeneralConsultantDashboard from '../dashboards/GeneralConsultantDashboard';
 import MainConsultantDashboard from '@/components/dashboards/MainConsultantDashboard';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Crown, UserCheck, Building2, Wrench } from 'lucide-react';
@@ -24,6 +25,13 @@ const Dashboard: React.FC = () => {
           badgeClasses: 'bg-purple-100 text-purple-800 border-purple-200',
           iconClasses: 'text-purple-600'
         };
+          case 'generalConsultant':   // <=== أضف هذه الحالة
+      return {
+        text: 'استشاري عام',
+        icon: UserCheck,          // ممكن تستخدم أي أيقونة مناسبة، أو أيقونة مختلفة لو حابب
+        badgeClasses: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        iconClasses: 'text-indigo-600'
+      };
       case 'consultant':
         return {
           text: 'استشاري',
@@ -71,6 +79,8 @@ const Dashboard: React.FC = () => {
     switch (user.role) {
       case 'mainConsultant':
         return <MainConsultantDashboard />;
+        case 'generalConsultant':   // <=== أضف هذا السطر
+      return <GeneralConsultantDashboard />;
       case 'consultant':
         return <ConsultantDashboard />;
       case 'owner':

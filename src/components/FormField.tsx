@@ -25,6 +25,9 @@ interface FormFieldProps {
   required?: boolean;
   onChange: (e: any) => void;
   placeholder?: string;
+  step?: string;
+  min?: string;
+   max?: string
 }
 
 const FormField: React.FC<FormFieldProps> = ({

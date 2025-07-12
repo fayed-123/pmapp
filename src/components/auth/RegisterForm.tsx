@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import FormField from '@/components/FormField';
-import { Button } from '@/components/ui/button';
+// export default RegisterForm;
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import FormField from "@/components/FormField";
+import { Button } from "@/components/ui/button";
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -10,13 +12,36 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    password: '',
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
+    password: "",
+    parentId: "",
   });
-  
+
+  const [contractors, setContractors] = useState<{ value: string; label: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchContractors() {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, name")
+        .eq("role", "contractor");
+
+      if (error) {
+        console.error("Error loading contractors:", error);
+      } else if (data) {
+        const options = data.map((c) => ({
+          value: c.id,
+          label: c.name,
+        }));
+        setContractors(options);
+      }
+    }
+    fetchContractors();
+  }, []);
+
   const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,7 +55,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       const success = await register(formData as any);
       if (success) {
@@ -43,14 +68,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
 
   const roleOptions = [
     { value: "mainConsultant", label: "مشرف عام" },
+    { value: "generalConsultant", label: "استشاري عام" },
     { value: "consultant", label: "استشاري" },
     { value: "owner", label: "مالك" },
     { value: "contractor", label: "مقاول" },
+    { value: "subcontractor", label: "مقاول فرعي" },
   ];
 
   return (
     <div className="max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 py-6 px-8 rounded-xl border">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-gray-50 py-6 px-8 rounded-xl border"
+      >
         <FormField
           label="الاسم الكامل"
           name="name"
@@ -59,7 +89,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           required
         />
-        
+
         <FormField
           label="البريد الإلكتروني"
           name="email"
@@ -68,7 +98,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           required
         />
-        
+
         <FormField
           label="رقم الهاتف (واتساب)"
           name="phone"
@@ -77,7 +107,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           required
         />
-        
+
         <FormField
           label="الدور"
           name="role"
@@ -87,7 +117,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           required
         />
-        
+
         <FormField
           label="كلمة المرور"
           name="password"
@@ -96,7 +126,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
           onChange={handleChange}
           required
         />
-        
+
+        {formData.role === "subcontractor" && (
+          <FormField
+            label="المقاول الرئيسي"
+            name="parentId"
+            type="select"
+            options={contractors}
+            value={formData.parentId}
+            onChange={handleChange}
+            required
+          />
+        )}
+
         <Button
           type="submit"
           className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold"
@@ -104,7 +146,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
         >
           {isLoading ? "جاري التسجيل..." : "إنشاء حساب"}
         </Button>
-        
+
         <div className="text-center mt-4">
           <Button
             type="button"

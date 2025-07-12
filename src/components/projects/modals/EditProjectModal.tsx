@@ -1,9 +1,8 @@
-
-import React from 'react';
-import { Project } from '@/lib/types';
-import FormField from '@/components/FormField';
-import Modal from '@/components/Modal';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { Project } from "@/lib/types";
+import FormField from "@/components/FormField";
+import Modal from "@/components/Modal";
+import { Button } from "@/components/ui/button";
 
 interface UserOption {
   value: string;
@@ -14,27 +13,31 @@ interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   editProject: Project;
-  owners: UserOption[];
-  consultants: UserOption[];
-  onProjectChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  // owners: UserOption[];
+  // consultants: UserOption[];
+  generalConsultants: UserOption[];
+  onProjectChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
-const EditProjectModal: React.FC<EditProjectModalProps> = ({ 
-  isOpen, 
-  onClose, 
+const EditProjectModal: React.FC<EditProjectModalProps> = ({
+  isOpen,
+  onClose,
   editProject,
-  owners,
-  consultants,
-  onProjectChange, 
-  onSubmit 
+  // owners,
+  // consultants,
+  generalConsultants,
+  onProjectChange,
+  onSubmit,
 }) => {
+  console.log("generalConsultants:", generalConsultants);
+  console.log("editProject.generalConsultantId:", editProject.generalConsultantId);
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title="تعديل بيانات المشروع"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="تعديل بيانات المشروع">
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -45,7 +48,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             onChange={onProjectChange}
             required
           />
-          
+
           <FormField
             label="تاريخ النهاية المتوقعة"
             name="end"
@@ -55,8 +58,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             required
           />
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             label="المالك"
             name="ownerId"
@@ -76,14 +79,27 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             onChange={onProjectChange}
             required
           />
-        </div>
+        </div> */}
         
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <FormField
+            label="الاستشاري العام"
+            name="generalConsultantId"
+            type="select"
+            options={generalConsultants}
+            value={editProject.generalConsultantId}
+            onChange={onProjectChange}
+            required
+          />
+        </div>
+
         <div className="flex justify-center">
           <Button type="submit">حفظ التعديلات</Button>
         </div>
       </form>
     </Modal>
   );
+  
 };
 
 export default EditProjectModal;

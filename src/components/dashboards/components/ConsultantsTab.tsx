@@ -9,37 +9,76 @@ import { UserPlus, User2, Crown, UserCheck, Check, X, Mail, Phone, Clock, Trash2
 
 interface ConsultantsTabProps {
   users: User[];
-  onAddUser: (name: string, role: "consultant", isMainConsultant?: boolean) => void;
+  onAddUser: (name: string, role: "consultant" | "mainConsultant" | "generalConsultant") => void;
   onApproveUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
 }
 
 const ConsultantsTab: React.FC<ConsultantsTabProps> = ({ users, onAddUser, onApproveUser, onDeleteUser }) => {
   const [newUserName, setNewUserName] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'consultant' | 'mainConsultant'>('consultant');
+  // const [newUserRole, setNewUserRole] = useState<'consultant' | 'mainConsultant'>('consultant');
+  const [newUserRole, setNewUserRole] = useState<'consultant' | 'mainConsultant' | 'generalConsultant'>('consultant');
 
+
+  // const handleAddUser = () => {
+  //   if (newUserName.trim()) {
+  //     const isMainConsultant = newUserRole === 'mainConsultant';
+  //     onAddUser(newUserName, 'consultant', isMainConsultant);
+  //     setNewUserName('');
+  //   }
+  // };
   const handleAddUser = () => {
-    if (newUserName.trim()) {
-      const isMainConsultant = newUserRole === 'mainConsultant';
-      onAddUser(newUserName, 'consultant', isMainConsultant);
-      setNewUserName('');
-    }
-  };
+  if (newUserName.trim()) {
+    onAddUser(newUserName, newUserRole);
+    setNewUserName('');
+  }
+};
 
+
+  // const filteredUsers = users.filter(user => 
+  //   user.role === 'consultant' || user.role === 'mainConsultant'
+  // );
   const filteredUsers = users.filter(user => 
-    user.role === 'consultant' || user.role === 'mainConsultant'
-  );
+  ['consultant', 'mainConsultant', 'generalConsultant'].includes(user.role)
+);
 
-  const getConsultantTypeConfig = (isMainConsultant: boolean) => {
-    if (isMainConsultant) {
-      return {
-        text: 'مشرف عام',
-        icon: Crown,
-        bgColor: 'bg-purple-100',
-        textColor: 'text-purple-800',
-        borderColor: 'border-purple-200'
-      };
-    }
+
+  // const getConsultantTypeConfig = (isMainConsultant: boolean) => {
+  //   if (isMainConsultant) {
+  //     return {
+  //       text: 'مشرف عام',
+  //       icon: Crown,
+  //       bgColor: 'bg-purple-100',
+  //       textColor: 'text-purple-800',
+  //       borderColor: 'border-purple-200'
+  //     };
+  //   }
+  //   return {
+  //     text: 'استشاري',
+  //     icon: UserCheck,
+  //     bgColor: 'bg-blue-100',
+  //     textColor: 'text-blue-800',
+  //     borderColor: 'border-blue-200'
+  //   };
+  // };
+const getConsultantTypeConfig = (role: string) => {
+  if (role === 'mainConsultant') {
+    return {
+      text: 'مشرف عام',
+      icon: Crown,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
+      borderColor: 'border-purple-200'
+    };
+  } else if (role === 'generalConsultant') {
+    return {
+      text: 'استشاري عام',
+      icon: Shield,
+      bgColor: 'bg-indigo-100',
+      textColor: 'text-indigo-800',
+      borderColor: 'border-indigo-200'
+    };
+  } else {
     return {
       text: 'استشاري',
       icon: UserCheck,
@@ -47,7 +86,8 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({ users, onAddUser, onApp
       textColor: 'text-blue-800',
       borderColor: 'border-blue-200'
     };
-  };
+  }
+};
 
   const approvedUsers = filteredUsers.filter(user => user.approved);
   const pendingUsers = filteredUsers.filter(user => !user.approved);
@@ -122,6 +162,7 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({ users, onAddUser, onApp
             >
               <option value="consultant">استشاري</option>
               <option value="mainConsultant">مشرف عام</option>
+              <option value="generalConsultant">استشاري عام</option>
             </select>
           </div>
           
@@ -154,7 +195,9 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({ users, onAddUser, onApp
               <TableBody>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map(user => {
-                    const typeConfig = getConsultantTypeConfig(user.isMainConsultant || false);
+                    // const typeConfig = getConsultantTypeConfig(user.isMainConsultant || false);
+                    const typeConfig = getConsultantTypeConfig(user.role);
+
                     const TypeIcon = typeConfig.icon;
                     const protected_user = isProtectedUser(user);
                     
@@ -248,7 +291,9 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({ users, onAddUser, onApp
       <div className="lg:hidden space-y-4">
         {filteredUsers.length > 0 ? (
           filteredUsers.map(user => {
-            const typeConfig = getConsultantTypeConfig(user.isMainConsultant || false);
+            // const typeConfig = getConsultantTypeConfig(user.isMainConsultant || false);
+            const typeConfig = getConsultantTypeConfig(user.role);
+
             const TypeIcon = typeConfig.icon;
             const protected_user = isProtectedUser(user);
             

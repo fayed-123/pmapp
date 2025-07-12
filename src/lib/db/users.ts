@@ -12,16 +12,21 @@ export async function loadUsers(): Promise<User[]> {
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
-    
-    // Convert database format to app format
+
+    // تحويل بيانات الداتا من قاعدة البيانات لصيغة التطبيق
     const convertedUsers = (users || []).map(user => ({
       ...user,
-      isMainConsultant: user.is_main_consultant
+      isMainConsultant: user.is_main_consultant,
+      parentId: user.parent_id,
+      subcontractorType: user.type,
+      approved: user.approved,
     }));
-    
-    // Create default consultant if no users exist
+
+    console.log('Loaded users from DB:', convertedUsers);
+
+    // إنشاء مستشار رئيسي افتراضي لو ما فيش مستخدمين
     if (convertedUsers.length === 0) {
       await supabase
         .from('users')
@@ -34,10 +39,10 @@ export async function loadUsers(): Promise<User[]> {
           approved: true,
           is_main_consultant: true
         });
-      
-      return await loadUsers(); // Reload after insertion
+
+      return await loadUsers(); // إعادة تحميل المستخدمين بعد الإضافة
     }
-    
+
     return convertedUsers;
   } catch (error) {
     console.error("Error loading users:", error);
@@ -102,3 +107,128 @@ export function setCurrentUser(user: User | null): void {
     console.error("Error setting current user:", error);
   }
 }
+
+export async function addSubcontractorUser({ name, type, contractorId }: {
+  name: string;
+  type: string;
+  contractorId: string;
+}) {
+  const email = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}@sub.com`;
+  const password = "123456"; // باسورد افتراضي، أو سيبه فاضي حسب نظامك
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      name,
+      email,
+      password,
+      role: 'subcontractor',
+      parent_id: contractorId,
+      type,
+      approved: true
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function loadSubcontractorsForCurrentUser(contractorId: string) {
+  const { data, error } = await supabase
+    .from('users')
+    // أضف contractor_id أو parent_id (حسب تسميتك في قاعدة البيانات)
+    .select('id, name, type, parent_id')
+    .eq('role', 'subcontractor')
+    .eq('parent_id', contractorId);
+
+  if (error) {
+    console.error('Error loading subcontractors:', error);
+    return [];
+  }
+
+  // عدل الحقول في البيانات لتطابق Subcontractor
+  return (data || []).map(sub => ({
+    id: sub.id,
+    name: sub.name,
+    type: sub.type,
+    contractor_id: sub.parent_id,  // عشان يتوافق مع النوع
+  }));
+}
+
+
+export async function deleteSubcontractor(id: string): Promise<void> {
+  console.log(`Attempting to delete subcontractor with id: ${id}`);
+
+  const { data, error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id)
+    .eq('role', 'subcontractor')
+    .select();
+
+  if (error) {
+    console.error('Error deleting subcontractor:', error);
+    throw new Error(error.message);
+  }
+
+  console.log('Deleted rows:', data);
+}
+
+// إضافة استشاري فرعي
+export async function addSubconsultantUser({
+  name,
+  type,
+  consultantId,
+}: {
+  name: string;
+  type: string;
+  consultantId: string;
+}) {
+  // انشئ ايميل وهمي
+  const email = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}@subconsultant.com`;
+
+  const { error } = await supabase.from("users").insert({
+    name,
+    type,
+    role: "subconsultant",
+    parent_id: consultantId,
+    email,            // لازم تبعت الايميل
+    password: "123456" // او أي باسورد افتراضي لازم لو الحقل موجود ومطلوب
+  });
+
+  if (error) throw error;
+}
+
+
+// تحميل الاستشاريين الفرعيين
+export async function loadSubconsultantsForCurrentUser(consultantId: string) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name, type, parent_id")
+    .eq("role", "subconsultant")
+    .eq("parent_id", consultantId);
+
+  if (error) {
+    console.error("Error loading subconsultants:", error);
+    return [];
+  }
+
+  return (data || []).map((sub) => ({
+    id: sub.id,
+    name: sub.name,
+    type: sub.type,
+    consultant_id: sub.parent_id,
+  }));
+}
+
+// حذف استشاري فرعي
+export async function deleteSubconsultant(id: string) {
+  const { error } = await supabase.from("users").delete().eq("id", id).eq("role", "subconsultant");
+  if (error) throw error;
+}
+
+

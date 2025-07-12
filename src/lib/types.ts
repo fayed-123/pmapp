@@ -5,10 +5,12 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: "consultant" | "owner" | "contractor" | "mainConsultant";
+  role: "consultant" | "owner" | "contractor" | "mainConsultant" | "generalConsultant"|"subcontractor";
   password: string;
   approved: boolean;
   isMainConsultant?: boolean;
+  parentId?: string;     
+  subcontractorType?: string;
 }
 
 export interface Project {
@@ -27,6 +29,21 @@ export interface Project {
   created: string;
   expectedDays: number;
   description: string;
+    contractValue: number;
+  advancePaymentPercentage: number;
+  workGuaranteePercentage: number;
+  materialDeliveryPaymentPercentage: number;
+  completedWorkPaymentPercentage: number;
+  generalConsultantId?: string;
+  mainConsultantId?: string;
+ownerName?: string;
+  consultantName?: string;
+  contractorName?: string;
+  generalConsultantName?: string;
+  mainConsultantName?: string;
+  subcontractorId?: string | null;
+  subconsultant_id?: string | null;
+
 }
 
 export interface ProjectItem {
@@ -41,6 +58,9 @@ export interface ProjectItem {
   executionTime: number;
   weightedProgress: number;
   riskLevel?: "low" | "medium" | "high"; // مستوى الخطر للبند
+  value?: number;
+  supplyProgress?: number; // نسبة إنجاز التوريد
+
 }
 
 export interface Contact {
@@ -49,5 +69,13 @@ export interface Contact {
   name: string;
   phone: string;
   role: string;
+}
+
+export interface Subcontractor {
+  id: string;
+  name: string;
+  type: string;
+  contractor_id: string;
+  created_at?: string;  // لو موجودة
 }
 
