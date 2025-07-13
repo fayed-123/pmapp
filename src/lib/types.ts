@@ -1,15 +1,19 @@
-
-
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
-  role: "consultant" | "owner" | "contractor" | "mainConsultant" | "generalConsultant"|"subcontractor";
+  role:
+    | "consultant"
+    | "owner"
+    | "contractor"
+    | "mainConsultant"
+    | "generalConsultant"
+    | "subcontractor";
   password: string;
   approved: boolean;
   isMainConsultant?: boolean;
-  parentId?: string;     
+  parentId?: string;
   subcontractorType?: string;
 }
 
@@ -22,28 +26,28 @@ export interface Project {
   ownerId: string;
   consultantId: string;
   contractorId: string;
-  status: "active" | "pending" | "closed";
+  status: "pending" | "published" | "active" | "closed";
   completion: number;
   timeElapsed: number;
   performance: number;
   created: string;
   expectedDays: number;
   description: string;
-    contractValue: number;
+  contractValue: number;
   advancePaymentPercentage: number;
   workGuaranteePercentage: number;
   materialDeliveryPaymentPercentage: number;
   completedWorkPaymentPercentage: number;
   generalConsultantId?: string;
   mainConsultantId?: string;
-ownerName?: string;
+  ownerName?: string;
   consultantName?: string;
   contractorName?: string;
   generalConsultantName?: string;
   mainConsultantName?: string;
   subcontractorId?: string | null;
   subconsultant_id?: string | null;
-
+  showToRole?: string;
 }
 
 export interface ProjectItem {
@@ -54,13 +58,12 @@ export interface ProjectItem {
   progress: number;
   weight: number;
   startDate: string; // تاريخ بدء البند
-  endDate: string;   // تاريخ انتهاء البند
+  endDate: string; // تاريخ انتهاء البند
   executionTime: number;
   weightedProgress: number;
   riskLevel?: "low" | "medium" | "high"; // مستوى الخطر للبند
   value?: number;
   supplyProgress?: number; // نسبة إنجاز التوريد
-
 }
 
 export interface Contact {
@@ -76,6 +79,5 @@ export interface Subcontractor {
   name: string;
   type: string;
   contractor_id: string;
-  created_at?: string;  // لو موجودة
+  created_at?: string; // لو موجودة
 }
-

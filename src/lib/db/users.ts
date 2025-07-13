@@ -79,11 +79,15 @@ export async function getUserById(id: string): Promise<User | undefined> {
 }
 
 export async function getUserNameById(id: string): Promise<string> {
-  if (!id) {
+  if (!id) return "-";
+
+  try {
+    const user = await getUserById(id);
+    return user?.name || "-";
+  } catch (error) {
+    console.error("خطأ في getUserNameById:", error);
     return "-";
   }
-  const user = await getUserById(id);
-  return user ? user.name : "-";
 }
 
 // Session management

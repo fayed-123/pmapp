@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Project } from "../types";
 import { loadItems } from "./items";
+import { getCurrentUser } from "@/lib/db";
 
 // Add a flag to prevent infinite loops
 let isLoadingProjects = false;
@@ -12,17 +13,19 @@ export async function loadProjects(): Promise<Project[]> {
 
   try {
     isLoadingProjects = true;
+
     const { data: projects, error } = await supabase
       .from("projects")
-        .select(`
-    id, name, description, start_date, end_date, completion, 
-    time_elapsed, expected_days, performance, created_at, 
-    status, owner_id, consultant_id, contractor_id, created_by, 
-    general_consultant_id, contract_value, advance_payment_percentage, 
-    work_guarantee_percentage, material_delivery_payment_percentage, 
-    completed_work_payment_percentage, main_consultant_id,
-    subcontractor_id  
-  `)
+      .select(`
+        id, name, description, start_date, end_date, completion, 
+        time_elapsed, expected_days, performance, created_at, 
+        status, owner_id, consultant_id, contractor_id, created_by, 
+        general_consultant_id, contract_value, advance_payment_percentage, 
+        work_guarantee_percentage, material_delivery_payment_percentage, 
+        completed_work_payment_percentage, main_consultant_id,
+        subcontractor_id,
+        show_to_role
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -35,15 +38,32 @@ export async function loadProjects(): Promise<Project[]> {
       return [];
     }
 
-    console.log("Raw projects from DB:", projects); // Debug log
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      console.warn("No user found in session");
+      isLoadingProjects = false;
+      return [];
+    }
 
-    const processedProjects = projects.map((project) => {
-      // Map database columns to expected properties
+ const filteredProjects = projects.filter((project) => {
+  const userRole = currentUser.role; // افترض إن currentUser فيه خاصية role
+  if (project.status === "published") {
+    return true; // كل المشاريع المنشورة تظهر للجميع
+  }
+  if (project.status === "pending" && (userRole === "mainConsultant" || userRole === "generalConsultant")) {
+    return true; // المشاريع المعلقة تظهر فقط لهؤلاء الأدوار
+  }
+  return false; // المشاريع الأخرى لا تظهر
+});
+
+
+
+    const processedProjects = filteredProjects.map((project) => {
       const convertedProject = {
         id: project.id,
         name: project.name,
         description: project.description,
-        desc: project.description, // Alias for backward compatibility
+        desc: project.description,
         start: project.start_date,
         end: project.end_date,
         completion: project.completion || 0,
@@ -52,32 +72,24 @@ export async function loadProjects(): Promise<Project[]> {
         performance: project.performance || 0,
         created: project.created_at,
         status: project.status || "active",
-        // Handle user references - check if these columns exist
         ownerId: project.owner_id,
         consultantId: project.consultant_id,
         contractorId: project.contractor_id,
         createdBy: project.created_by,
-        generalConsultantId: project.general_consultant_id, 
+        generalConsultantId: project.general_consultant_id,
         contractValue: project.contract_value || 0,
         advancePaymentPercentage: project.advance_payment_percentage || 0,
         workGuaranteePercentage: project.work_guarantee_percentage || 0,
-        materialDeliveryPaymentPercentage:
-          project.material_delivery_payment_percentage || 0,
-        completedWorkPaymentPercentage:
-          project.completed_work_payment_percentage || 0,
-           mainConsultantId: project.main_consultant_id,
-         subcontractorId: project.subcontractor_id, 
+        materialDeliveryPaymentPercentage: project.material_delivery_payment_percentage || 0,
+        completedWorkPaymentPercentage: project.completed_work_payment_percentage || 0,
+        mainConsultantId: project.main_consultant_id,
+        subcontractorId: project.subcontractor_id,
       };
 
-      // Calculate time elapsed
-      const startDate = convertedProject.start
-        ? new Date(convertedProject.start)
-        : new Date();
+      const startDate = convertedProject.start ? new Date(convertedProject.start) : new Date();
       const now = new Date();
       const daysElapsed = Math.max(
-        Math.ceil(
-          (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-        ),
+        Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
         0
       );
 
@@ -89,12 +101,14 @@ export async function loadProjects(): Promise<Project[]> {
 
     isLoadingProjects = false;
     return processedProjects;
+
   } catch (error) {
     console.error("Error loading projects:", error);
     isLoadingProjects = false;
     return [];
   }
 }
+
 
 export async function saveProject(project: Project): Promise<boolean> {
   try {
@@ -117,7 +131,12 @@ export async function saveProject(project: Project): Promise<boolean> {
           consultant_id: project.consultantId || null,
           contractor_id: project.contractorId || null,
           subcontractor_id: project.subcontractorId || null,  // <-- أضفت السطر ده
-          status: project.status || "active",
+          // status: project.status || "active",
+          // status: project.status || "pending",
+          status: project.status === "pending" || project.status === "published"
+  ? project.status
+  : "pending",
+
           contract_value: project.contractValue || 0,
           advance_payment_percentage: project.advancePaymentPercentage || 0,
           work_guarantee_percentage: project.workGuaranteePercentage || 0,
@@ -126,7 +145,8 @@ export async function saveProject(project: Project): Promise<boolean> {
           completed_work_payment_percentage:
             project.completedWorkPaymentPercentage || 0,
           general_consultant_id: project.generalConsultantId || null,
-          main_consultant_id: project.mainConsultantId || null
+          main_consultant_id: project.mainConsultantId || null,
+          show_to_role: project.showToRole || "mainConsultant" 
         })
         .eq("id", project.id);
 
@@ -149,7 +169,12 @@ export async function saveProject(project: Project): Promise<boolean> {
         consultant_id: project.consultantId || null,
         contractor_id: project.contractorId || null,
         subcontractor_id: project.subcontractorId || null,  // <-- أضفت السطر ده
-        status: project.status || "active",
+        // status: project.status || "active",
+        // status: project.status || "pending",
+        status: project.status === "pending" || project.status === "published"
+  ? project.status
+  : "pending",
+
         contract_value: project.contractValue || 0,
         advance_payment_percentage: project.advancePaymentPercentage || 0,
         work_guarantee_percentage: project.workGuaranteePercentage || 0,
@@ -158,7 +183,8 @@ export async function saveProject(project: Project): Promise<boolean> {
         completed_work_payment_percentage:
           project.completedWorkPaymentPercentage || 0,
         general_consultant_id: project.generalConsultantId || null,
-        main_consultant_id: project.mainConsultantId || null
+        main_consultant_id: project.mainConsultantId || null,
+        show_to_role: project.showToRole || "mainConsultant" 
       };
 
       console.log("Inserting project data:", insertData);
