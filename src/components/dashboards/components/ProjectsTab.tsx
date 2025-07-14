@@ -8,9 +8,10 @@ import { getProjectStatus } from '../utils/projectUtils';
 interface ProjectsTabProps {
   projects: Project[];
   onViewProject: (project: Project) => void;
+  subconsultants: any[];
 }
 
-const ProjectsTab: React.FC<ProjectsTabProps> = ({ projects, onViewProject }) => {
+const ProjectsTab: React.FC<ProjectsTabProps> = ({ projects, onViewProject ,subconsultants}) => {
   const [userNames, setUserNames] = useState<{[key: string]: string}>({});
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   

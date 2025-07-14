@@ -210,24 +210,30 @@ export async function addSubconsultantUser({
 
 // تحميل الاستشاريين الفرعيين
 export async function loadSubconsultantsForCurrentUser(consultantId: string) {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, name, type, parent_id")
-    .eq("role", "subconsultant")
-    .eq("parent_id", consultantId);
-
-  if (error) {
-    console.error("Error loading subconsultants:", error);
+  console.log("🚀 Loading subconsultants for consultantId:", consultantId);
+  
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
+      .eq('role', 'subconsultant');
+    
+    console.log("📊 Supabase query result:", data);
+    console.log("❌ Supabase error:", error);
+    
+    if (error) {
+      console.error('Error loading subconsultants:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Exception in loadSubconsultants:', error);
     return [];
   }
-
-  return (data || []).map((sub) => ({
-    id: sub.id,
-    name: sub.name,
-    type: sub.type,
-    consultant_id: sub.parent_id,
-  }));
 }
+
 
 // حذف استشاري فرعي
 export async function deleteSubconsultant(id: string) {

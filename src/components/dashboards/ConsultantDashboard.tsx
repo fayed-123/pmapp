@@ -141,7 +141,7 @@ const ConsultantDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case Tab.Projects:
-        return <ProjectsTab projects={projects} onViewProject={handleViewProject} />;
+        return <ProjectsTab projects={projects} onViewProject={handleViewProject} subconsultants={subconsultants} />;
       case Tab.Stats:
         return <StatsTab />;
       default:
@@ -252,6 +252,7 @@ const ConsultantDashboard: React.FC = () => {
             project={selectedProject}
             currentUser={currentUser}
             onClose={handleCloseProjectDetails}
+            subconsultants={subconsultants}
           />
         </Modal>
       )}

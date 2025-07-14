@@ -15,6 +15,7 @@ export interface User {
   isMainConsultant?: boolean;
   parentId?: string;
   subcontractorType?: string;
+    type?: string;
 }
 
 export interface Project {
@@ -48,6 +49,9 @@ export interface Project {
   subcontractorId?: string | null;
   subconsultant_id?: string | null;
   showToRole?: string;
+  electricalConsultantId?: string | null;
+  architectConsultantId?: string | null;
+  mechanicalConsultantId?: string | null;
 }
 
 export interface ProjectItem {
