@@ -1,0 +1,161 @@
+[33mcommit f198135d072664e58f22e0e4fdb20caa8de6ee9c[m
+Author: Mohamed <mfayed646@gmail.com>
+Date:   Sun Jul 13 14:12:38 2025 +0300
+
+    the code
+
+[1mdiff --git a/src/lib/db/projects.ts b/src/lib/db/projects.ts[m
+[1mindex bb77afd..bef6024 100644[m
+[1m--- a/src/lib/db/projects.ts[m
+[1m+++ b/src/lib/db/projects.ts[m
+[36m@@ -1,6 +1,7 @@[m
+ import { supabase } from "@/lib/supabase";[m
+ import { Project } from "../types";[m
+ import { loadItems } from "./items";[m
+[32m+[m[32mimport { getCurrentUser } from "@/lib/db";[m
+ [m
+ // Add a flag to prevent infinite loops[m
+ let isLoadingProjects = false;[m
+[36m@@ -12,17 +13,19 @@[m [mexport async function loadProjects(): Promise<Project[]> {[m
+ [m
+   try {[m
+     isLoadingProjects = true;[m
+[32m+[m
+     const { data: projects, error } = await supabase[m
+       .from("projects")[m
+[31m-        .select(`[m
+[31m-    id, name, description, start_date, end_date, completion, [m
+[31m-    time_elapsed, expected_days, performance, created_at, [m
+[31m-    status, owner_id, consultant_id, contractor_id, created_by, [m
+[31m-    general_consultant_id, contract_value, advance_payment_percentage, [m
+[31m-    work_guarantee_percentage, material_delivery_payment_percentage, [m
+[31m-    completed_work_payment_percentage, main_consultant_id,[m
+[31m-    subcontractor_id  [m
+[31m-  `)[m
+[32m+[m[32m      .select(`[m
+[32m+[m[32m        id, name, description, start_date, end_date, completion,[m[41m [m
+[32m+[m[32m        time_elapsed, expected_days, performance, created_at,[m[41m [m
+[32m+[m[32m        status, owner_id, consultant_id, contractor_id, created_by,[m[41m [m
+[32m+[m[32m        general_consultant_id, contract_value, advance_payment_percentage,[m[41m [m
+[32m+[m[32m        work_guarantee_percentage, material_delivery_payment_percentage,[m[41m [m
+[32m+[m[32m        completed_work_payment_percentage, main_consultant_id,[m
+[32m+[m[32m        subcontractor_id,[m
+[32m+[m[32m        show_to_role[m
+[32m+[m[32m      `)[m
+       .order("created_at", { ascending: false });[m
+ [m
+     if (error) {[m
+[36m@@ -35,15 +38,32 @@[m [mexport async function loadProjects(): Promise<Project[]> {[m
+       return [];[m
+     }[m
+ [m
+[31m-    console.log("Raw projects from DB:", projects); // Debug log[m
+[32m+[m[32m    const currentUser = getCurrentUser();[m
+[32m+[m[32m    if (!currentUser) {[m
+[32m+[m[32m      console.warn("No user found in session");[m
+[32m+[m[32m      isLoadingProjects = false;[m
+[32m+[m[32m      return [];[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m const filteredProjects = projects.filter((project) => {[m
+[32m+[m[32m  const userRole = currentUser.role; // افترض إن currentUser فيه خاصية role[m
+[32m+[m[32m  if (project.status === "published") {[m
+[32m+[m[32m    return true; // كل المشاريع المنشورة تظهر للجميع[m
+[32m+[m[32m  }[m
+[32m+[m[32m  if (project.status === "pending" && (userRole === "mainConsultant" || userRole === "generalConsultant")) {[m
+[32m+[m[32m    return true; // المشاريع المعلقة تظهر فقط لهؤلاء الأدوار[m
+[32m+[m[32m  }[m
+[32m+[m[32m  return false; // المشاريع الأخرى لا تظهر[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m
+ [m
+[31m-    const processedProjects = projects.map((project) => {[m
+[31m-      // Map database columns to expected properties[m
+[32m+[m[32m    const processedProjects = filteredProjects.map((project) => {[m
+       const convertedProject = {[m
+         id: project.id,[m
+         name: project.name,[m
+         description: project.description,[m
+[31m-        desc: project.description, // Alias for backward compatibility[m
+[32m+[m[32m        desc: project.description,[m
+         start: project.start_date,[m
+         end: project.end_date,[m
+         completion: project.completion || 0,[m
+[36m@@ -52,32 +72,24 @@[m [mexport async function loadProjects(): Promise<Project[]> {[m
+         performance: project.performance || 0,[m
+         created: project.created_at,[m
+         status: project.status || "active",[m
+[31m-        // Handle user references - check if these columns exist[m
+         ownerId: project.owner_id,[m
+         consultantId: project.consultant_id,[m
+         contractorId: project.contractor_id,[m
+         createdBy: project.created_by,[m
+[31m-        generalConsultantId: project.general_consultant_id, [m
+[32m+[m[32m        generalConsultantId: project.general_consultant_id,[m
+         contractValue: project.contract_value || 0,[m
+         advancePaymentPercentage: project.advance_payment_percentage || 0,[m
+         workGuaranteePercentage: project.work_guarantee_percentage || 0,[m
+[31m-        materialDeliveryPaymentPercentage:[m
+[31m-          project.material_delivery_payment_percentage || 0,[m
+[31m-        completedWorkPaymentPercentage:[m
+[31m-          project.completed_work_payment_percentage || 0,[m
+[31m-           mainConsultantId: project.main_consultant_id,[m
+[31m-         subcontractorId: project.subcontractor_id, [m
+[32m+[m[32m        materialDeliveryPaymentPercentage: project.material_delivery_payment_percentage || 0,[m
+[32m+[m[32m        completedWorkPaymentPercentage: project.completed_work_payment_percentage || 0,[m
+[32m+[m[32m        mainConsultantId: project.main_consultant_id,[m
+[32m+[m[32m        subcontractorId: project.subcontractor_id,[m
+       };[m
+ [m
+[31m-      // Calculate time elapsed[m
+[31m-      const startDate = convertedProject.start[m
+[31m-        ? new Date(convertedProject.start)[m
+[31m-        : new Date();[m
+[32m+[m[32m      const startDate = convertedProject.start ? new Date(convertedProject.start) : new Date();[m
+       const now = new Date();[m
+       const daysElapsed = Math.max([m
+[31m-        Math.ceil([m
+[31m-          (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)[m
+[31m-        ),[m
+[32m+[m[32m        Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),[m
+         0[m
+       );[m
+ [m
+[36m@@ -89,6 +101,7 @@[m [mexport async function loadProjects(): Promise<Project[]> {[m
+ [m
+     isLoadingProjects = false;[m
+     return processedProjects;[m
+[32m+[m
+   } catch (error) {[m
+     console.error("Error loading projects:", error);[m
+     isLoadingProjects = false;[m
+[36m@@ -96,6 +109,7 @@[m [mexport async function loadProjects(): Promise<Project[]> {[m
+   }[m
+ }[m
+ [m
+[32m+[m
+ export async function saveProject(project: Project): Promise<boolean> {[m
+   try {[m
+     console.log("Saving project with data:", project);[m
+[36m@@ -117,7 +131,12 @@[m [mexport async function saveProject(project: Project): Promise<boolean> {[m
+           consultant_id: project.consultantId || null,[m
+           contractor_id: project.contractorId || null,[m
+           subcontractor_id: project.subcontractorId || null,  // <-- أضفت السطر ده[m
+[31m-          status: project.status || "active",[m
+[32m+[m[32m          // status: project.status || "active",[m
+[32m+[m[32m          // status: project.status || "pending",[m
+[32m+[m[32m          status: project.status === "pending" || project.status === "published"[m
+[32m+[m[32m  ? project.status[m
+[32m+[m[32m  : "pending",[m
+[32m+[m
+           contract_value: project.contractValue || 0,[m
+           advance_payment_percentage: project.advancePaymentPercentage || 0,[m
+           work_guarantee_percentage: project.workGuaranteePercentage || 0,[m
+[36m@@ -126,7 +145,8 @@[m [mexport async function saveProject(project: Project): Promise<boolean> {[m
+           completed_work_payment_percentage:[m
+             project.completedWorkPaymentPercentage || 0,[m
+           general_consultant_id: project.generalConsultantId || null,[m
+[31m-          main_consultant_id: project.mainConsultantId || null[m
+[32m+[m[32m          main_consultant_id: project.mainConsultantId || null,[m
+[32m+[m[32m          show_to_role: project.showToRole || "mainConsultant"[m[41m 
