@@ -40,6 +40,10 @@ const ExtractSummaryPage: React.FC<Props> = ({
 
   const [discountsVisible, setDiscountsVisible] = useState(false);
 
+  // دالة مساعدة لتنسيق الأرقام أو إظهار "-" إذا كانت القيمة غير موجودة
+  const formatNumber = (num?: number) =>
+    num !== undefined && num !== null ? num.toLocaleString() : "-";
+
   // حساب نسبة التوريد والإنجاز بناء على وزن كل بند
   const totalSupplyProgress = useMemo(
     () =>
@@ -121,7 +125,7 @@ const ExtractSummaryPage: React.FC<Props> = ({
       {/* ملخص بيانات المشروع */}
       <Card className="p-4 space-y-3">
         <h2 className="text-xl font-bold">ملخص بيانات المشروع</h2>
-        <p>قيمة المشروع: {projectValue.toLocaleString()} ج.م</p>
+        <p>قيمة المشروع: {formatNumber(projectValue)} ج.م</p>
         <p>نسبة التوريد: {totalSupplyProgress.toFixed(2)}%</p>
         <p>نسبة إنجاز الأعمال: {totalWorkProgress.toFixed(2)}%</p>
       </Card>
@@ -129,9 +133,9 @@ const ExtractSummaryPage: React.FC<Props> = ({
       {/* قيمة المستخلص */}
       <Card className="p-4 space-y-3">
         <h2 className="text-xl font-bold">قيمة المستخلص</h2>
-        <p>توريد المواد: {materialValue.toLocaleString()} ج.م</p>
-        <p>الأعمال المنجزة: {workValue.toLocaleString()} ج.م</p>
-        <p className="font-bold">الإجمالي: {totalExtract.toLocaleString()} ج.م</p>
+        <p>توريد المواد: {formatNumber(materialValue)} ج.م</p>
+        <p>الأعمال المنجزة: {formatNumber(workValue)} ج.م</p>
+        <p className="font-bold">الإجمالي: {formatNumber(totalExtract)} ج.م</p>
       </Card>
 
       {/* قائمة الخصومات المنسدلة */}
@@ -153,7 +157,7 @@ const ExtractSummaryPage: React.FC<Props> = ({
               >
                 <span>{d.name}</span>
                 <div className="flex items-center gap-2">
-                  <span>{d.value.toLocaleString()} ج.م</span>
+                  <span>{formatNumber(d.value)} ج.م</span>
 
                   {/* إمكانية حذف خصومات يدوية فقط (من بعد idx 1) */}
                   {idx >= 2 && (
@@ -199,7 +203,7 @@ const ExtractSummaryPage: React.FC<Props> = ({
             </div>
 
             <p className="font-bold mt-4">
-              مجموع الخصومات: {totalDiscounts.toLocaleString()} ج.م
+              مجموع الخصومات: {formatNumber(totalDiscounts)} ج.م
             </p>
           </>
         )}
@@ -210,7 +214,7 @@ const ExtractSummaryPage: React.FC<Props> = ({
         <h2 className="text-xl font-bold">الإضافات</h2>
         {manualAdditions.map((a, idx) => (
           <p key={idx}>
-            {a.name}: {a.value.toLocaleString()} ج.م
+            {a.name}: {formatNumber(a.value)} ج.م
           </p>
         ))}
         <div className="flex gap-2 items-end">
@@ -230,13 +234,13 @@ const ExtractSummaryPage: React.FC<Props> = ({
           />
           <Button onClick={addAddition}>إضافة بند</Button>
         </div>
-        <p className="font-bold">مجموع الإضافات: {manualAdditionsTotal.toLocaleString()} ج.م</p>
+        <p className="font-bold">مجموع الإضافات: {formatNumber(manualAdditionsTotal)} ج.م</p>
       </Card>
 
       {/* القيمة المستحقة للدفع */}
       <Card className="p-4">
         <h2 className="text-xl font-bold">القيمة المستحقة للدفع</h2>
-        <p className="text-2xl text-green-700 font-bold">{netExtract.toLocaleString()} ج.م</p>
+        <p className="text-2xl text-green-700 font-bold">{formatNumber(netExtract)} ج.م</p>
       </Card>
     </div>
   );

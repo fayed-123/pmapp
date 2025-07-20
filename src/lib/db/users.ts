@@ -20,7 +20,7 @@ export async function loadUsers(): Promise<User[]> {
       ...user,
       isMainConsultant: user.is_main_consultant,
       parentId: user.parent_id,
-      subcontractorType: user.type,
+      subcontractorType: user.subcontractor_type, // ✅ ده هو العمود الصح من الجدول
       approved: user.approved,
     }));
 
@@ -128,6 +128,7 @@ export async function addSubcontractorUser({ name, type, contractorId }: {
       password,
       role: 'subcontractor',
       parent_id: contractorId,
+      subcontractor_type: type,
       type,
       approved: true
     })
@@ -216,7 +217,7 @@ export async function loadSubconsultantsForCurrentUser(consultantId: string) {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
+      // .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
       .eq('role', 'subconsultant');
     
     console.log("📊 Supabase query result:", data);
@@ -240,5 +241,39 @@ export async function deleteSubconsultant(id: string) {
   const { error } = await supabase.from("users").delete().eq("id", id).eq("role", "subconsultant");
   if (error) throw error;
 }
+
+export async function getSubconsultantsForProject(projectId: string) {
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('electricalconsultantid, architectconsultantid, mechanicalconsultantid')
+    .eq('id', projectId)
+    .single();
+
+  if (error || !project) {
+    console.error('Error loading project subconsultants:', error);
+    return [];
+  }
+
+  const consultantIds = [
+    project.electricalconsultantid,
+    project.architectconsultantid,
+    project.mechanicalconsultantid,
+  ].filter(Boolean); // يشيل الـ nulls
+
+  if (consultantIds.length === 0) return [];
+
+  const { data: subconsultants, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, type, role')
+    .in('id', consultantIds);
+
+  if (usersError) {
+    console.error('Error fetching subconsultants:', usersError);
+    return [];
+  }
+
+  return subconsultants;
+}
+
 
 

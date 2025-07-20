@@ -23,9 +23,13 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [generalConsultants, setGeneralConsultants] = useState<
     { value: string; label: string }[]
   >([]);
-  const [owners, setOwners] = useState<{ value: string, label: string }[]>([]);
-  const [consultants, setConsultants] = useState<{ value: string, label: string }[]>([]);
-  const [contractors, setContractors] = useState<{ value: string, label: string }[]>([]);
+  const [owners, setOwners] = useState<{ value: string; label: string }[]>([]);
+  const [consultants, setConsultants] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [contractors, setContractors] = useState<
+    { value: string; label: string }[]
+  >([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,7 +42,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     ownerId: "",
     consultantId: "",
     contractorId: "",
-    generalConsultantId: '',
+    // generalConsultantId: '',
     // Financial fields
     contractValue: "",
     advancePaymentPercentage: "",
@@ -51,25 +55,25 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     const fetchUsers = async () => {
       try {
         const users = await loadUsers();
-        setGeneralConsultants(
-          users
-            .filter((u) => u.role === "generalConsultant" && u.approved)
-            .map((u) => ({ value: u.id, label: u.name }))
-        );
+        // setGeneralConsultants(
+        //   users
+        //     .filter((u) => u.role === "generalConsultant" && u.approved)
+        //     .map((u) => ({ value: u.id, label: u.name }))
+        // );
         setOwners(
           users
-            .filter(u => u.role === "owner" && u.approved)
-            .map(u => ({ value: u.id, label: u.name }))
+            .filter((u) => u.role === "owner" && u.approved)
+            .map((u) => ({ value: u.id, label: u.name }))
         );
         setConsultants(
           users
-            .filter(u => u.role === "consultant" && u.approved)
-            .map(u => ({ value: u.id, label: u.name }))
+            .filter((u) => u.role === "consultant" && u.approved)
+            .map((u) => ({ value: u.id, label: u.name }))
         );
         setContractors(
           users
-            .filter(u => u.role === "contractor" && u.approved)
-            .map(u => ({ value: u.id, label: u.name }))
+            .filter((u) => u.role === "contractor" && u.approved)
+            .map((u) => ({ value: u.id, label: u.name }))
         );
       } catch (error) {
         console.error("Error loading users:", error);
@@ -126,7 +130,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         ownerId: formData.ownerId,
         consultantId: formData.consultantId,
         contractorId: formData.contractorId,
-        generalConsultantId: formData.generalConsultantId,
+        // generalConsultantId: formData.generalConsultantId,
         status: "active",
         completion: 0,
         timeElapsed: 0,
@@ -150,7 +154,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         completedWorkPaymentPercentage: formData.completedWorkPaymentPercentage
           ? parseFloat(formData.completedWorkPaymentPercentage)
           : 0,
-          mainConsultantId: user.id, 
+        mainConsultantId: user.id,
       };
 
       const success = await saveProject(newProject);
@@ -169,7 +173,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           ownerId: "",
           consultantId: "",
           contractorId: "",
-          generalConsultantId: '',
+          // generalConsultantId: '',
           contractValue: "",
           advancePaymentPercentage: "",
           workGuaranteePercentage: "",
@@ -208,7 +212,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       ownerId: "",
       consultantId: "",
       contractorId: "",
-      generalConsultantId: '',
+      // generalConsultantId: '',
       contractValue: "",
       advancePaymentPercentage: "",
       workGuaranteePercentage: "",
@@ -265,7 +269,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <FormField
+            {/* <FormField
               label="الاستشاري العام"
               name="generalConsultantId"
               type="select"
@@ -273,8 +277,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               value={formData.generalConsultantId}
               onChange={handleFormChange}
               required
+            /> */}
+            {/* تبتبتبت */}
+            <FormField
+              label="الاستشاري المشرف"
+              name="consultantId"
+              type="select"
+              options={consultants}
+              value={formData.consultantId}
+              onChange={handleFormChange}
+              required
             />
-{/* تبتبتبت */}
             <FormField
               label="المالك"
               name="ownerId"
@@ -284,19 +297,9 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               onChange={handleFormChange}
               required
             />
-
-            {/* <FormField
-              label="الاستشاري المشرف"
-              name="consultantId"
-              type="select"
-              options={consultants}
-              value={formData.consultantId}
-              onChange={handleFormChange}
-              required
-            /> */}
             <FormField
               label=" المقاول"
-              name="contractorId"//////contractorsId
+              name="contractorId" //////contractorsId
               type="select"
               options={contractors}
               value={formData.contractorId}

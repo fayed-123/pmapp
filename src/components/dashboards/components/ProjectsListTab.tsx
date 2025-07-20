@@ -229,16 +229,17 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                   <TableHead className="text-right font-semibold text-gray-700">
                     الحالة
                   </TableHead>
-                  {/* تبتبتبت */}
                   <TableHead className="text-right font-semibold text-gray-700">
                     المقاول
                   </TableHead>
                   <TableHead className="text-right font-semibold text-gray-700">
                     المالك
                   </TableHead>
-                  {/* تبتبتبت */}
-                  <TableHead className="text-right font-semibold text-gray-700">
+                  {/* <TableHead className="text-right font-semibold text-gray-700">
                     الاستشاري العام
+                  </TableHead> */}
+                  <TableHead className="text-right font-semibold text-gray-700">
+                    الاستشاري
                   </TableHead>
                   <TableHead className="text-center font-semibold text-gray-700">
                     التحكم
@@ -277,16 +278,17 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                         </div>
                       </TableCell>
                       <TableCell>{getProjectStatus(project)}</TableCell>
-                      {/* تبتبتبت */}
                       <TableCell className="text-gray-600">
                         {getUserDisplayName(project.contractorId)}
                       </TableCell>
                       <TableCell className="text-gray-600">
                         {getUserDisplayName(project.ownerId)}
                       </TableCell>
-                      {/* تبتبتبت */}
-                      <TableCell className="text-gray-600">
+                      {/* <TableCell className="text-gray-600">
                         {getUserDisplayName(project.generalConsultantId)}
+                      </TableCell> */}
+                      <TableCell className="text-gray-600">
+                        {getUserDisplayName(project.consultantId)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-2">
@@ -400,7 +402,6 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                 </div>
 
                 {/* People */}
-                {/* تبتبتبت */}
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
@@ -413,13 +414,20 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                     <span>المالك: {getUserDisplayName(project.ownerId)}</span>
                   </div>
                 </div>
-                {/* تبتبتبت */}
-                <div className="space-y-2 text-sm">
+                {/* <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
                     <span>
                       الاستشاري العام:{" "}
                       {getUserDisplayName(project.generalConsultantId)}
+                    </span>
+                  </div>
+                </div> */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="h-4 w-4" />
+                    <span>
+                      الاستشاري: {getUserDisplayName(project.consultantId)}
                     </span>
                   </div>
                 </div>

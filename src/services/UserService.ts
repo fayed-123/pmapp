@@ -25,7 +25,7 @@ class UserService {
       | "owner"
       | "contractor"
       | "consultant"
-      | "generalConsultant"
+      // | "generalConsultant"
       | "subcontractor",
     isMainConsultant = false,
     parentId?: string
@@ -69,7 +69,7 @@ class UserService {
         is_main_consultant:
           isMainConsultant &&
           (role === "consultant" || finalRole === "mainConsultant"),
-        parentId: parentId || null,
+       parent_id: parentId || null, 
       });
 
       if (error) {
@@ -94,9 +94,9 @@ class UserService {
         case "mainConsultant":
           roleText = "الاستشاري الرئيسي";
           break;
-        case "generalConsultant":
-          roleText = "الاستشاري العام";
-          break;
+        // case "generalConsultant":
+        //   roleText = "الاستشاري العام";
+        //   break;
       }
 
       toast({

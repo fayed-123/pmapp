@@ -9,13 +9,16 @@ export interface User {
     | "contractor"
     | "mainConsultant"
     | "generalConsultant"
-    | "subcontractor";
+    | "subcontractor"
+    | "subConsultant"
+    | "subconsultant";
   password: string;
   approved: boolean;
   isMainConsultant?: boolean;
   parentId?: string;
-  subcontractorType?: string;
-    type?: string;
+  parent_id?: string;
+  subcontractorType?: "architect" | "mechanical" | "electrical";
+  type?: string;
 }
 
 export interface Project {
@@ -52,6 +55,9 @@ export interface Project {
   electricalConsultantId?: string | null;
   architectConsultantId?: string | null;
   mechanicalConsultantId?: string | null;
+  electricalContractorId?: string;
+  architectContractorId?: string;
+  mechanicalContractorId?: string;
 }
 
 export interface ProjectItem {
@@ -68,6 +74,9 @@ export interface ProjectItem {
   riskLevel?: "low" | "medium" | "high"; // مستوى الخطر للبند
   value?: number;
   supplyProgress?: number; // نسبة إنجاز التوريد
+  subcontractorType?: "architect" | "mechanical" | "electrical";
+  subcontractorId?: string | null;
+  contractorid?: string | null;
 }
 
 export interface Contact {

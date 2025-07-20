@@ -40,7 +40,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
   const roleOptions = [
     { value: "mainConsultant", label: "مشرف عام" },
-    { value: "generalConsultant", label: "استشاري عام" },
+    // { value: "generalConsultant", label: "استشاري عام" },
     { value: "consultant", label: "استشاري" },
     { value: "owner", label: "مالك" },
     { value: "contractor", label: "مقاول" },

@@ -7,7 +7,7 @@ import React from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import GeneralConsultantDashboard from "./components/dashboards/GeneralConsultantDashboard";
+// import GeneralConsultantDashboard from "./components/dashboards/GeneralConsultantDashboard";
 import ExtractSummaryPage from "@/components/dashboards/ExtractSummaryPage";
 
 const queryClient = new QueryClient({
@@ -28,10 +28,10 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route
+            {/* <Route
               path="/general-consultant"
               element={<GeneralConsultantDashboard />}
-            />
+            /> */}
             <Route
               path="/extract-summary"
               element={

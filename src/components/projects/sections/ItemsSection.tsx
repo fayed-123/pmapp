@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { ProjectItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import ItemsTable from '../ItemsTable';
 import { AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext'; // 🟢 هنا الإضافة الجديدة
 
 interface ItemsSectionProps {
   items: ProjectItem[];
@@ -32,6 +32,8 @@ const ItemsSection: React.FC<ItemsSectionProps> = ({
   onEditItem,
   onDeleteItem
 }) => {
+  const { user } = useAuth(); // 🟢 هنا جلب الدور
+
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-2">
@@ -53,7 +55,7 @@ const ItemsSection: React.FC<ItemsSectionProps> = ({
       
       {(canEdit || canReview) && (
         <div className="flex flex-wrap items-center gap-3 mb-3">
-          {canEdit && (
+          {canEdit && (user.role === "contractor" || user.role === "subcontractor") && (
             <>
               <Button 
                 variant="outline" 

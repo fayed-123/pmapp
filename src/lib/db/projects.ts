@@ -28,7 +28,9 @@ export async function loadProjects(): Promise<Project[]> {
         electricalconsultantid,
         architectconsultantid,
         mechanicalconsultantid,
-
+        electricalcontractorid, 
+        architectcontractorid,
+        mechanicalcontractorid,
         show_to_role
       `
       )
@@ -53,17 +55,23 @@ export async function loadProjects(): Promise<Project[]> {
     }
 
     const filteredProjects = projects.filter((project) => {
-      const userRole = currentUser.role; // افترض إن currentUser فيه خاصية role
+      const userRole = currentUser.role;
+      const userId = currentUser.id;
+
       if (project.status === "published") {
-        return true; // كل المشاريع المنشورة تظهر للجميع
+        return true;
       }
-      if (
-        project.status === "pending" &&
-        (userRole === "mainConsultant" || userRole === "generalConsultant")
-      ) {
-        return true; // المشاريع المعلقة تظهر فقط لهؤلاء الأدوار
+
+      if (project.status === "pending") {
+        return (
+          userRole === "mainConsultant" || // المشرف العام يشوف الكل
+          userId === project.consultant_id ||
+          userId === project.owner_id ||
+          userId === project.contractor_id
+        );
       }
-      return false; // المشاريع الأخرى لا تظهر
+
+      return false;
     });
 
     const processedProjects = filteredProjects.map((project) => {
@@ -94,13 +102,13 @@ export async function loadProjects(): Promise<Project[]> {
           project.completed_work_payment_percentage || 0,
         mainConsultantId: project.main_consultant_id,
         subcontractorId: project.subcontractor_id,
-electricalConsultantId: project.electricalconsultantid || null,
-architectConsultantId: project.architectconsultantid || null,
-mechanicalConsultantId: project.mechanicalconsultantid || null,
+        electricalConsultantId: project.electricalconsultantid || null,
+        architectConsultantId: project.architectconsultantid || null,
+        mechanicalConsultantId: project.mechanicalconsultantid || null,
 
-
-
-
+        electricalContractorId: project.electricalcontractorid || null,
+        architectContractorId: project.architectcontractorid || null,
+        mechanicalContractorId: project.mechanicalcontractorid || null,
       };
 
       const startDate = convertedProject.start
@@ -125,6 +133,43 @@ mechanicalConsultantId: project.mechanicalconsultantid || null,
   } catch (error) {
     console.error("Error loading projects:", error);
     isLoadingProjects = false;
+    return [];
+  }
+}
+
+export async function loadProjectsForSubcontractor(subId: string): Promise<Project[]> {
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .or(
+        `electricalcontractorid.eq.${subId},architectcontractorid.eq.${subId},mechanicalcontractorid.eq.${subId}`
+      );
+
+    if (error) {
+      console.error("Error loading projects for subcontractor:", error.message);
+      return [];
+    }
+
+    return (data || []).map((project) => ({
+      ...project,
+      start: project.start_date,
+      end: project.end_date,
+      timeElapsed: project.time_elapsed,
+      expectedDays: project.expected_days,
+      consultantId: project.consultant_id,
+      contractorId: project.contractor_id,
+      subcontractorId: project.subcontractor_id,
+      mainConsultantId: project.main_consultant_id,
+      electricalConsultantId: project.electricalconsultantid,
+      architectConsultantId: project.architectconsultantid,
+      mechanicalConsultantId: project.mechanicalconsultantid,
+      electricalContractorId: project.electricalcontractorid,
+      architectContractorId: project.architectcontractorid,
+      mechanicalContractorId: project.mechanicalcontractorid,
+    }));
+  } catch (error) {
+    console.error("Error loading subcontractor projects:", error);
     return [];
   }
 }
@@ -167,11 +212,13 @@ export async function saveProject(project: Project): Promise<boolean> {
           general_consultant_id: project.generalConsultantId || null,
           main_consultant_id: project.mainConsultantId || null,
           show_to_role: project.showToRole || "mainConsultant",
-     electricalconsultantid: project.electricalConsultantId || null,
-architectconsultantid: project.architectConsultantId || null,
-mechanicalconsultantid: project.mechanicalConsultantId || null,
+          electricalconsultantid: project.electricalConsultantId || null,
+          architectconsultantid: project.architectConsultantId || null,
+          mechanicalconsultantid: project.mechanicalConsultantId || null,
 
-
+          electricalcontractorid: project.electricalContractorId || null,
+          architectcontractorid: project.architectContractorId || null,
+          mechanicalcontractorid: project.mechanicalContractorId || null,
         })
         .eq("id", project.id);
 
@@ -211,11 +258,13 @@ mechanicalconsultantid: project.mechanicalConsultantId || null,
         general_consultant_id: project.generalConsultantId || null,
         main_consultant_id: project.mainConsultantId || null,
         show_to_role: project.showToRole || "mainConsultant",
-   electricalconsultantid: project.electricalConsultantId || null,
-architectconsultantid: project.architectConsultantId || null,
-mechanicalconsultantid: project.mechanicalConsultantId || null,
+        electricalconsultantid: project.electricalConsultantId || null,
+        architectconsultantid: project.architectConsultantId || null,
+        mechanicalconsultantid: project.mechanicalConsultantId || null,
 
-
+        electricalcontractorid: project.electricalContractorId || null,
+        architectcontractorid: project.architectContractorId || null,
+        mechanicalcontractorid: project.mechanicalContractorId || null,
       };
 
       console.log("Inserting project data:", insertData);
@@ -262,6 +311,10 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
       electricalConsultantId: project.electricalconsultantid,
       architectConsultantId: project.architectconsultantid,
       mechanicalConsultantId: project.mechanicalconsultantid,
+
+      electricalContractorId: project.electricalcontractorid,
+      architectContractorId: project.architectcontractorid,
+      mechanicalContractorId: project.mechanicalcontractorid,
     };
   } catch (error) {
     console.error("Error getting project by ID:", error);
