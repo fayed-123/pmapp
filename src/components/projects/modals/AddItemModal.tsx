@@ -13,16 +13,16 @@ interface AddItemModalProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
-const AddItemModal: React.FC<AddItemModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  newItem, 
-  onItemChange, 
+const AddItemModal: React.FC<AddItemModalProps> = ({
+  isOpen,
+  onClose,
+  newItem,
+  onItemChange,
   onSubmit
 }) => {
   return (
-    <Modal 
-      isOpen={isOpen} 
+    <Modal
+      isOpen={isOpen}
       onClose={onClose}
       title="إضافة بند جديد"
     >
@@ -35,7 +35,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
           onChange={onItemChange}
           required
         />
-        
+
         <FormField
           label="اسم البند"
           name="name"
@@ -44,7 +44,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
           onChange={onItemChange}
           required
         />
-        
+
         <FormField
           label="نسبة الإنجاز (0-100%)"
           name="progress"
@@ -53,7 +53,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
           onChange={onItemChange}
           required
         />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             label="تاريخ البدء"
@@ -63,7 +63,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             onChange={onItemChange}
             required
           />
-          
+
           <FormField
             label="تاريخ الانتهاء"
             name="endDate"
@@ -73,7 +73,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             required
           />
         </div>
-        
+
         <FormField
           label="زمن التنفيذ (أيام)"
           name="executionTime"
@@ -83,7 +83,37 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
           required
           placeholder="يتم حسابه تلقائيًا من التواريخ"
         />
-        
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            نوع المقاول الفرعي
+          </label>
+          <select
+            name="subcontractorType"
+            value={newItem.subcontractorType || ""}
+            onChange={onItemChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">-- اختر النوع --</option>
+            <option value="architect">معماري</option>
+            <option value="mechanical">ميكانيكي</option>
+            <option value="electrical">كهربائي</option>
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            تعليقات
+          </label>
+          <textarea
+            name="comments"
+            value={newItem.comments || ""}
+            onChange={onItemChange}
+            placeholder="أي ملاحظات على البند..."
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          />
+        </div>
+
         <div className="flex justify-center">
           <Button type="submit">إضافة</Button>
         </div>

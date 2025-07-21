@@ -32,7 +32,12 @@ export async function loadItems(): Promise<ProjectItem[]> {
       endDate: item.end_date,
       executionTime: item.execution_time,
       weightedProgress: item.weighted_progress,
-      riskLevel: item.risk_level
+      riskLevel: item.risk_level,
+      status: item.status || 'pending',
+      comments: item.comments,
+      submittedBy: item.submitted_by,
+      reviewedBy: item.reviewed_by,
+      reviewedAt: item.reviewed_at
     }));
     // Group items by project
     const itemsByProject: { [key: string]: ProjectItem[] } = {};
@@ -134,7 +139,12 @@ export async function saveItem(item: ProjectItem): Promise<boolean> {
           execution_time: item.executionTime,
           weight: item.weight,
           weighted_progress: item.weightedProgress,
-          risk_level: item.riskLevel
+          risk_level: item.riskLevel,
+          status: item.status || 'pending',
+          comments: item.comments,
+          submitted_by: item.submittedBy,
+          reviewed_by: item.reviewedBy,
+          reviewed_at: item.reviewedAt
         })
         .eq('id', item.id);
       

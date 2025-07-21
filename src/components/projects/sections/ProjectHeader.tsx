@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { getUserNameById, saveProject } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/ui/sonner";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -29,6 +30,7 @@ interface ProjectHeaderProps {
   setSelectedSubcontractorId: (id: string) => void;
   currentUser: User;
   role: string;
+  refreshProject?: () => Promise<void>;
 }
 
 const ProjectHeader: React.FC<ProjectHeaderProps> = ({
@@ -41,6 +43,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   selectedSubcontractorId,
   setSelectedSubcontractorId,
   currentUser,
+  refreshProject
 }) => {
   console.log("🔍 ProjectHeader received subconsultants:", subconsultants);
   console.log("🔍 Length:", subconsultants.length);
@@ -49,6 +52,8 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
 
   const [owners, setOwners] = useState<User[]>([]);
   const [contractors, setContractors] = useState<User[]>([]);
+  const [projectComment, setProjectComment] = useState('');
+
 
   // استشاريين فرعيين حسب النوع نملأهم من prop subconsultants
   const [subElectricalConsultants, setSubElectricalConsultants] = useState<
@@ -270,11 +275,11 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
     }
   };
 
-const isSubcontractor = currentUser.role === "subcontractor";
+  const isSubcontractor = currentUser.role === "subcontractor";
 
-const projectDetails = isSubcontractor
-  ? [] // أو ممكن تحط حاجات محدودة جداً هنا
-  : [
+  const projectDetails = isSubcontractor
+    ? [] // أو ممكن تحط حاجات محدودة جداً هنا
+    : [
       {
         icon: CalendarDays,
         label: "تاريخ البداية",
@@ -353,68 +358,241 @@ const projectDetails = isSubcontractor
         value: isLoading
           ? "جاري التحميل..."
           : userNames.contractor ||
-            (project.contractorId ? "غير معروف" : "غير مُعيّن"),
+          (project.contractorId ? "غير معروف" : "غير مُعيّن"),
         color: "text-green-600",
         bgColor: "bg-green-100",
       },
       currentUser.role === "contractor"
         ? {
-            icon: UserCheck,
-            label: "مقاول كهرباء",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.electricalContractor || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          }
+          icon: UserCheck,
+          label: "مقاول كهرباء",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.electricalContractor || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        }
         : {
-            icon: UserCheck,
-            label: "استشاري كهرباء",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.electricalConsultant || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          },
+          icon: UserCheck,
+          label: "استشاري كهرباء",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.electricalConsultant || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        },
       currentUser.role === "contractor"
         ? {
-            icon: UserCheck,
-            label: "مقاول معماري",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.architectContractor || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          }
+          icon: UserCheck,
+          label: "مقاول معماري",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.architectContractor || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        }
         : {
-            icon: UserCheck,
-            label: "استشاري معماري",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.architectConsultant || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          },
+          icon: UserCheck,
+          label: "استشاري معماري",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.architectConsultant || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        },
       currentUser.role === "contractor"
         ? {
-            icon: UserCheck,
-            label: "مقاول ميكانيكا",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.mechanicalContractor || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          }
+          icon: UserCheck,
+          label: "مقاول ميكانيكا",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.mechanicalContractor || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        }
         : {
-            icon: UserCheck,
-            label: "استشاري ميكانيكا",
-            value: isLoading
-              ? "جاري التحميل..."
-              : userNames.mechanicalConsultant || "غير مُعيّن",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-100",
-          },
+          icon: UserCheck,
+          label: "استشاري ميكانيكا",
+          value: isLoading
+            ? "جاري التحميل..."
+            : userNames.mechanicalConsultant || "غير مُعيّن",
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-100",
+        },
     ];
+
+    const handleApproveAll = async () => {
+      try {
+        // Determine next status based on current user role
+        let nextStatus = '';
+        let notificationTitle = '';
+        let notificationMessage = '';
+        
+        switch (currentUser.role) {
+          case 'contractor':
+            nextStatus = 'contractor_approved';
+            notificationTitle = 'موافقة المقاول على البنود';
+            notificationMessage = `تمت موافقة المقاول ${currentUser.name} على جميع بنود المشروع: ${project.name}`;
+            break;
+          case 'subconsultant':
+            nextStatus = 'subconsultant_approved';
+            notificationTitle = 'موافقة الاستشاري الفرعي على البنود';
+            notificationMessage = `تمت موافقة الاستشاري الفرعي ${currentUser.name} على جميع بنود المشروع: ${project.name}`;
+            break;
+          case 'consultant':
+            nextStatus = 'consultant_approved';
+            notificationTitle = 'موافقة الاستشاري على البنود';
+            notificationMessage = `تمت موافقة الاستشاري ${currentUser.name} على جميع بنود المشروع: ${project.name}`;
+            break;
+          case 'mainConsultant':
+            nextStatus = 'published';
+            notificationTitle = 'نشر المشروع';
+            notificationMessage = `تم نشر المشروع ${project.name} من قبل المشرف العام`;
+            break;
+          default:
+            console.error('غير مصرح لهذا المستخدم بالموافقة');
+            return;
+        }
+    
+        // Update all items status
+        const { error: itemsError } = await supabase
+          .from('project_items')
+          .update({
+            status: nextStatus,
+            comments: projectComment || null,
+            reviewed_by: currentUser.id,
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('project_id', project.id);
+    
+        if (itemsError) throw itemsError;
+    
+        // If all items are published, update project status
+        if (nextStatus === 'published') {
+          const { error: projectError } = await supabase
+            .from('projects')
+            .update({ status: 'published' })
+            .eq('id', project.id);
+    
+          if (projectError) throw projectError;
+        }
+    
+        // Determine who to notify next
+        let nextUserId = '';
+        if (nextStatus === 'contractor_approved') {
+          // Notify subconsultants based on project assignments
+          const subconsultantIds = [
+            project.electricalConsultantId,
+            project.architectConsultantId, 
+            project.mechanicalConsultantId
+          ].filter(Boolean);
+          
+          // For now, notify the first available subconsultant
+          // In a real implementation, you might want to notify all relevant subconsultants
+          if (subconsultantIds.length > 0) {
+            nextUserId = subconsultantIds[0];
+          }
+        } else if (nextStatus === 'subconsultant_approved') {
+          nextUserId = project.consultantId || '';
+        } else if (nextStatus === 'consultant_approved') {
+          // Find main consultant (you might need to query for this)
+          const { data: mainConsultant } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'mainConsultant')
+            .eq('approved', true)
+            .single();
+          
+          if (mainConsultant) {
+            nextUserId = mainConsultant.id;
+          }
+        } else if (nextStatus === 'published') {
+          // Notify project owner
+          nextUserId = project.ownerId || '';
+        }
+    
+        // Send notification to next person in workflow
+        if (nextUserId) {
+          const { error: notificationError } = await supabase
+            .from('notifications')
+            .insert({
+              title: notificationTitle,
+              message: notificationMessage,
+              type: 'project_update',
+              from_user_id: currentUser.id,
+              from_user_name: currentUser.name,
+              from_user_role: currentUser.role,
+              to_user_id: nextUserId,
+              project_id: project.id,
+              project_name: project.name,
+              data: { comment: projectComment }
+            });
+    
+          if (notificationError) {
+            console.error('Error sending notification:', notificationError);
+          }
+        }
+    
+        // Show success message
+        toast.success("تمت الموافقة على جميع البنود بنجاح");
+    
+        // Clear comment and refresh data
+        setProjectComment('');
+        
+        // Refresh project data if available
+        if (typeof refreshProject === 'function') {
+          await refreshProject();
+        }
+    
+      } catch (error) {
+        console.error('Error approving all items:', error);
+        toast.error("حدث خطأ أثناء الموافقة على البنود");
+      }
+    };
+
+  const handleRejectAll = async () => {
+    if (!projectComment.trim()) {
+      toast.error("يجب ادخال التعليق");
+      return;
+    }
+
+    try {
+      // Get current user's role to determine which status to set
+      const currentRole = currentUser.role;
+      let newStatus = 'pending';
+
+      // Move one step back in the workflow
+      if (currentRole === 'consultant') {
+        newStatus = 'subconsultant_approved'; // Back to subconsultant
+      } else if (currentRole === 'subconsultant') {
+        newStatus = 'contractor_approved'; // Back to contractor
+      } else if (currentRole === 'contractor') {
+        newStatus = 'pending'; // Back to subcontractor
+      }
+
+      // Update all items with modification_requested status and comment
+      const { error } = await supabase
+        .from('project_items')
+        .update({
+          status: 'modification_requested',
+          comments: projectComment,
+          reviewed_by: currentUser.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('project_id', project.id);
+
+      if (error) throw error;
+
+      // Send notification to previous step in workflow
+      // Refresh items
+      // Show success toast
+
+      setProjectComment('');
+    } catch (error) {
+      console.error('Error requesting modifications:', error);
+      // Show error toast
+    }
+  };
 
 
   return (
@@ -609,50 +787,49 @@ const projectDetails = isSubcontractor
               </div>
             )}
 
-            {/* دروبداون المالك والمقاول تبقى موجودة بغض النظر عن الدور */}
-           {currentUser.role !== "subcontractor" && (
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              {/* المالك */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  المالك
-                </label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={selectedOwnerId}
-                  onChange={handleOwnerChange}
-                  disabled={!canEdit}
-                >
-                  <option value="">-- اختر --</option>
-                  {owners.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {currentUser.role !== "subcontractor" && (
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                {/* المالك */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    المالك
+                  </label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={selectedOwnerId}
+                    onChange={handleOwnerChange}
+                    disabled={!canEdit}
+                  >
+                    <option value="">-- اختر --</option>
+                    {owners.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* المقاول */}
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  المقاول
-                </label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={selectedContractorId}
-                  onChange={handleContractorChange}
-                  disabled={!canEdit}
-                >
-                  <option value="">-- اختر --</option>
-                  {contractors.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
+                {/* المقاول */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    المقاول
+                  </label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={selectedContractorId}
+                    onChange={handleContractorChange}
+                    disabled={!canEdit}
+                  >
+                    <option value="">-- اختر --</option>
+                    {contractors.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-)}
+            )}
             {currentUser.role !== "subcontractor" && (
               <div className="text-center mb-6">
                 <Button
@@ -667,14 +844,14 @@ const projectDetails = isSubcontractor
           </>
         )}
 
- {currentUser.role !== "subcontractor" && (
-  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-    <div className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center">
-      <Users className="w-3 h-3 text-gray-600" />
-    </div>
-    معلومات المشروع
-  </h4>
-)}
+        {currentUser.role !== "subcontractor" && (
+          <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <div className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center">
+              <Users className="w-3 h-3 text-gray-600" />
+            </div>
+            معلومات المشروع
+          </h4>
+        )}
 
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projectDetails.map((detail, index) => {
@@ -701,8 +878,45 @@ const projectDetails = isSubcontractor
             );
           })}
         </div>
-        
+
       </Card>
+      {/* Approval Actions */}
+      {canReview && (
+        <Card className="p-4 sm:p-6 shadow-sm border-0 bg-white mt-4">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4">إجراءات المراجعة</h4>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                تعليق على جميع البنود
+              </label>
+              <textarea
+                className="w-full p-3 border rounded-lg resize-none"
+                rows={3}
+                placeholder="اكتب تعليقك هنا..."
+                value={projectComment}
+                onChange={(e) => setProjectComment(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                className="bg-green-600 text-white hover:bg-green-700"
+                onClick={handleApproveAll}
+              >
+                موافقة على جميع البنود
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
+                onClick={handleRejectAll}
+              >
+                طلب تعديل جميع البنود
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

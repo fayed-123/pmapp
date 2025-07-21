@@ -74,7 +74,18 @@ export async function loadProjects(): Promise<Project[]> {
       return false;
     });
 
+   
+
     const processedProjects = filteredProjects.map((project) => {
+
+
+      console.log('🔍 Converted project object:', {
+        electricalConsultantId: project.electricalConsultantId,
+        architectConsultantId: project.architectConsultantId,
+        mechanicalConsultantId: project.mechanicalConsultantId,
+        currentUserId: currentUser.id,
+        currentUserType: currentUser.type
+      });
       const convertedProject = {
         id: project.id,
         name: project.name,
@@ -121,6 +132,7 @@ export async function loadProjects(): Promise<Project[]> {
         ),
         0
       );
+
 
       return {
         ...convertedProject,

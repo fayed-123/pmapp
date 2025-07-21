@@ -77,6 +77,11 @@ export interface ProjectItem {
   subcontractorType?: "architect" | "mechanical" | "electrical";
   subcontractorId?: string | null;
   contractorid?: string | null;
+  status?: "pending" | "contractor_approved" | "subconsultant_approved" | "consultant_approved" | "published" | "modification_requested";
+  comments?: string;
+  submittedBy?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;  
 }
 
 export interface Contact {

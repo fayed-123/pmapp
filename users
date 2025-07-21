@@ -1,0 +1,81 @@
+مقاول
+mohamed1
+
+
+
+mohamedelkashif1983@gmail.com  مشرف عام 
+mohamed1  مقاول 
+fayed      مالك 
+omar     استشاري  
+salma	 مقاول معماري 
+mona	مقاول ميكانيكي 
+alaa	 مقاول كهربائي
+doha	استشاري معماري
+ali	    استشاري ميكانيكي
+walead	 استشاري كهربائي
+
+
+
+Project Context for Another AI
+What We're Building
+We're implementing a workflow approval system for a construction project management application. The system has different user roles that need to approve project items (BOQs) in a specific sequence.
+Workflow Requirements
+
+Sub Contractors submit project items
+Main Contractors approve submitted items
+Sub Consultants approve contractor-approved items
+Main Consultants approve subconsultant-approved items
+Final status becomes "published" when fully approved
+Any role can request modifications (reject) which moves workflow one step back
+Comments are required when requesting modifications
+Notifications sent at each approval step
+
+Database Schema Changes Needed
+
+Add to project_items table:
+
+status (text): pending, contractor_approved, subconsultant_approved, consultant_approved, published, modification_requested
+comments (text): for modification requests
+submitted_by (uuid): who submitted the item
+reviewed_by (uuid): who last reviewed it
+reviewed_at (timestamp): when last reviewed
+
+
+
+Key Files to Modify
+Core Logic Files:
+
+types.ts - Add new fields to ProjectItem interface
+items.ts - Update loadItems and saveItem functions for new fields
+ProjectContext.tsx - Fix canEdit/canReview permissions logic
+projects.ts - Add workflow status management functions
+
+UI Components:
+
+ItemsSection.tsx - Add view toggle (cards/table), submit buttons
+ItemsTable.tsx - Add status/comments columns, approve/reject buttons
+ItemsCards.tsx - NEW component for better UX (card-based view)
+ProjectHeader.tsx - Add bulk approve/reject actions with comments
+AddItemModal.tsx - Add subcontractor type and comments fields
+
+Services:
+
+NotificationService.ts - Send notifications on status changes
+Create new workflow service for status transitions
+
+Current Issues Fixed
+
+Permission Logic: Subcontractors were able to approve their own items (fixed in ProjectContext)
+UX Problem: Table too wide with too many columns (solved with card view)
+Workflow Missing: No approval chain implementation
+Comments System: No way to add modification requests
+
+Implementation Approach
+
+Use existing methods, don't create new ones
+Update database queries in current functions
+Add UI components for workflow actions
+Implement proper role-based permissions
+Create card-based view for better mobile UX
+
+The goal is a clean, intuitive approval workflow that works well on all devices with proper role-based access control.

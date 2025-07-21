@@ -89,6 +89,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     canReview,
     editProject,
     analysisData,
+    refreshProject,
     // generalConsultants,
   } = useProject();
 
@@ -219,6 +220,17 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     });
   };
 
+  const handleSubmitItems = async () => {
+    // Implementation needed - will update all pending items to submitted status
+  };
+
+  const handleApproveItem = async (itemId: string) => {
+    // Implementation needed - update single item status
+  };
+  const handleRejectItem = async (itemId: string) => {
+    // Implementation needed - update single item status
+  };
+
   return (
     <div>
       {/* 3. مررنا الـ subconsultants المحملين كـ prop ل ProjectHeader */}
@@ -233,6 +245,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         setSelectedSubcontractorId={setSelectedSubcontractorId}
         currentUser={currentUser}
         role={currentUser?.role || ""}
+        refreshProject={refreshProject}
 
       />
 
@@ -248,6 +261,9 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         onShowAnalysis={() => setShowAnalysis(true)}
         onEditItem={handleStartEditItem}
         onDeleteItem={deleteItem}
+        onSubmitItems={handleSubmitItems} 
+        onApproveItem={handleApproveItem} 
+        onRejectItem={handleRejectItem} 
       />
 
       <ExtractSummaryPage
