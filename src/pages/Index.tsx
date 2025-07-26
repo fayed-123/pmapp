@@ -19,13 +19,11 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-sm sm:max-w-md md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 lg:py-10">
+      <div className="max-w-sm sm:max-w-md md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4  py-6 lg:py-10">
         
         {/* Main Content Area */}
         <div className="overflow-hidden">
-          <div className="p-4 sm:p-6 md:p-8 lg:p-12">
             {user ? <Dashboard /> : <Auth />}
-          </div>
         </div>
 
         {/* Footer */}

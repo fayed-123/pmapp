@@ -27,7 +27,6 @@ const Dashboard: React.FC = () => {
   if (!user) {
     return null;
   }
-console.log("ROLE FROM getRoleConfig:", user.role);
 
   const getRoleConfig = () => {
     switch (user.role) {
@@ -108,7 +107,6 @@ console.log("ROLE FROM getRoleConfig:", user.role);
   };
 
   const renderDashboard = () => {
-    console.log("Current user:", user);
 
     switch (user.role) {
       case "mainConsultant":

@@ -24,7 +24,6 @@ interface NotifyUserParams {
     role: string;
   };
   to_user_id: string;
-  to_user_name?: string;
   title: string;
   message: string;
   type: 'system' | 'task_assigned' | 'project_update' | 'reminder';
@@ -35,22 +34,29 @@ export const notifyUser = async (params: NotifyUserParams) => {
   try {
     const { currentUser, ...rest } = params;
 
-    const { error } = await supabase.from("notifications").insert([
-      {
-        title: rest.title,
-        message: rest.message,
-        type: rest.type,
-        from_user_id: currentUser.id,
-        from_user_name: currentUser.name,
-        from_user_role: currentUser.role,
-        to_user_id: rest.to_user_id,
-        to_user_name: rest.to_user_name || "",
-        data: rest.data || null,
-      },
-    ]);
+
+    const notificationData = {
+      title: rest.title,
+      message: rest.message,
+      type: rest.type,
+      from_user_id: currentUser.id,
+      from_user_name: currentUser.name,
+      from_user_role: currentUser.role,
+      to_user_id: rest.to_user_id,
+      data: rest.data || null,
+    };
+
+
+    console.log("📧 Inserting notification:", notificationData);
+
+    const { error } = await supabase.from("notifications").insert([notificationData]);
+
 
     if (error) {
-      console.error('Error sending notification:', error.message);
+      console.error('❌ Error sending notification:', error.message);
+      console.error('❌ Full error object:', error);
+    } else {
+      console.log('✅ Notification sent successfully');
     }
   } catch (err) {
     console.error('Failed to notify user:', err);

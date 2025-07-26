@@ -34,53 +34,38 @@ export const useMainConsultantDashboard = () => {
     if (currentUser) {
       loadData();
     }
-    console.log("Current User:", currentUser);
   }, [currentUser]);
 
-const loadData = async () => {
-  console.log("Current User:", currentUser);
-  setIsLoading(true);
-  try {
-    const allProjects = await loadProjects();
-    console.log("All projects loaded:", allProjects);
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const allProjects = await loadProjects();
 
-    allProjects.forEach((project) => {
-      console.log(
-        `Project: ${project.name}, mainConsultantId: ${project.mainConsultantId}, ownerId: ${project.ownerId}`
-      );
-    });
+      let filteredProjects = allProjects;
 
-    let filteredProjects = allProjects;
-
-    if (currentUser?.role === "mainConsultant") {
-      filteredProjects = allProjects.filter((project) => {
-        const match =
-          project.mainConsultantId === currentUser.id ||
-          project.ownerId === currentUser.id;
-        console.log(
-          `Filtering project ${project.name}: mainConsultantId=${project.mainConsultantId}, ownerId=${project.ownerId}, matches=${match}`
-        );
-        return match;
-      });
-    } else if (currentUser?.role === "generalConsultant") {
-      filteredProjects = allProjects.filter((project) => {
-        const match = project.generalConsultantId === currentUser.id;
-        console.log(
-          `Filtering project ${project.name}: generalConsultantId=${project.generalConsultantId}, matches=${match}`
-        );
-        return match;
-      });
-    }
-
-    console.log("Filtered projects:", filteredProjects);
+      if (currentUser?.role === "mainConsultant") {
+        filteredProjects = allProjects.filter((project) => {
+          const match =
+            project.main_consultant_id === currentUser.id ||
+            project.owner_id === currentUser.id ||
+            project.consultant_id === currentUser.id ||        // ADD THIS LINE
+            project.created_by === currentUser.id;             // ADD THIS LINE TOO
+          return match;
+        });
+      } else if (currentUser?.role === "generalConsultant") {
+        filteredProjects = allProjects.filter((project) => {
+          const match = project.generalConsultantId === currentUser.id;
+          return match;
+        });
+      }
 
       // جمع معرفات المستخدمين
       const userIds = [
         ...new Set(
           [
-            ...filteredProjects.map((p) => p.ownerId),
-            ...filteredProjects.map((p) => p.consultantId),
-            ...filteredProjects.map((p) => p.contractorId),
+            ...filteredProjects.map((p) => p.owner_id),
+            ...filteredProjects.map((p) => p.consultant_id),
+            ...filteredProjects.map((p) => p.contractor_id),
             ...filteredProjects.map((p) => p.generalConsultantId),
             ...filteredProjects.map((p) => p.mainConsultantId),
           ].filter(Boolean)
@@ -98,9 +83,9 @@ const loadData = async () => {
       // دمج الأسماء داخل المشاريع
       const projectsWithNames = filteredProjects.map((project) => ({
         ...project,
-        ownerName: names[project.ownerId] || "-",
-        consultantName: names[project.consultantId] || "-",
-        contractorName: names[project.contractorId] || "-",
+        ownerName: names[project.owner_id] || "-",
+        consultantName: names[project.consultant_id] || "-",
+        contractorName: names[project.contractor_id] || "-",
         generalConsultantName: names[project.generalConsultantId] || "-",
         mainConsultantName: names[project.mainConsultantId] || "-",
       }));
@@ -219,31 +204,30 @@ const loadData = async () => {
       }
 
       const success = await addUser(name, baseRole as any, mainConsultantFlag);
-    if (success) {
+      if (success) {
         const updatedUsers = await loadUsers();
         setUsers(updatedUsers.sort((a, b) => a.role.localeCompare(b.role)));
-         const newUser = updatedUsers.find(
-    (u) => u.name === name && u.role === baseRole
-  );
+        const newUser = updatedUsers.find(
+          (u) => u.name === name && u.role === baseRole
+        );
 
-  if (newUser) {
-    await supabase.from("notifications").insert([
-      {
-        title: "تمت إضافتك",
-        message: `تمت إضافتك إلى النظام بواسطة ${currentUser.name}`,
-        type: "system",
-        from_user_id: currentUser.id,
-        from_user_name: currentUser.name,
-        from_user_role: currentUser.role,
-        to_user_id: newUser.id,
-        to_user_name: newUser.name,
-        data: {
-          action: "added_user",
-          role: newUser.role,
-        },
-      },
-    ]);
-  }
+        if (newUser) {
+          await supabase.from("notifications").insert([
+            {
+              title: "تمت إضافتك",
+              message: `تمت إضافتك إلى النظام بواسطة ${currentUser.name}`,
+              type: "system",
+              from_user_id: currentUser.id,
+              from_user_name: currentUser.name,
+              from_user_role: currentUser.role,
+              to_user_id: newUser.id,
+              data: {
+                action: "added_user",
+                role: newUser.role,
+              },
+            },
+          ]);
+        }
       }
     } catch (error) {
       console.error("Error adding user:", error);

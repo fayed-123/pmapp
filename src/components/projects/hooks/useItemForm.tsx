@@ -11,7 +11,8 @@ export const useItemForm = (initialItem?: Partial<ProjectItem>) => {
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     executionTime: 7,
     weight: 0,
-    weightedProgress: 0
+    weightedProgress: 0,
+    
   });
 
   const resetItemForm = () => {

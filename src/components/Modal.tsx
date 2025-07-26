@@ -49,8 +49,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, size = 
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6"
+    <div style={{margin: "0!important"}}
+      className="m-0 fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6"
       onClick={() => onClose()}
     >
       <div 

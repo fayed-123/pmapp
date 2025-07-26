@@ -1,13 +1,16 @@
+-- Users table
 CREATE TABLE users (
-  id UUID PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT NOT NULL,
   phone TEXT,
-  role TEXT NOT NULL CHECK (role IN ('consultant', 'client', 'admin')),
+  role TEXT NOT NULL CHECK (role IN ('consultant', 'owner', 'contractor', 'mainConsultant', 'generalConsultant', 'subcontractor', 'subConsultant', 'subconsultant', 'client', 'admin')),
   password TEXT NOT NULL,
   approved BOOLEAN DEFAULT false,
   is_main_consultant BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  parent_id UUID REFERENCES users(id),
+  type VARCHAR
 );
 
 -- Projects table
@@ -22,23 +25,56 @@ CREATE TABLE projects (
   expected_days INTEGER DEFAULT 30,
   performance INTEGER DEFAULT 0,
   created_by UUID REFERENCES users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  owner_id UUID REFERENCES users(id),
+  consultant_id UUID REFERENCES users(id),
+  contractor_id UUID REFERENCES users(id),
+  status TEXT DEFAULT 'active',
+  contract_value NUMERIC DEFAULT 0,
+  advance_payment_percentage NUMERIC DEFAULT 0,
+  work_guarantee_percentage NUMERIC DEFAULT 0,
+  material_delivery_payment_percentage NUMERIC DEFAULT 0,
+  completed_work_payment_percentage NUMERIC DEFAULT 0,
+  general_consultant_id UUID REFERENCES users(id),
+  main_consultant_id UUID REFERENCES users(id),
+  contractorid UUID REFERENCES users(id),
+  subcontractor_id UUID REFERENCES users(id),
+  subconsultant_id UUID REFERENCES users(id),
+  show_to_role TEXT,
+  electricalconsultantid UUID REFERENCES users(id),
+  architectconsultantid UUID REFERENCES users(id),
+  mechanicalconsultantid UUID REFERENCES users(id),
+  architect_consultant_id UUID REFERENCES users(id),
+  electricalcontractorid UUID REFERENCES users(id),
+  architectcontractorid UUID REFERENCES users(id),
+  mechanicalcontractorid UUID REFERENCES users(id)
 );
 
 -- Project items table
 CREATE TABLE project_items (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  item_number TEXT NOT NULL,
   name TEXT NOT NULL,
-  description TEXT,
-  start_date DATE,
-  end_date DATE,
-  progress INTEGER DEFAULT 0,
+  progress NUMERIC DEFAULT 0,
+  weight NUMERIC DEFAULT 0,
+  start_date TEXT,
+  end_date TEXT,
   execution_time INTEGER DEFAULT 0,
-  weight DECIMAL DEFAULT 0,
-  weighted_progress DECIMAL DEFAULT 0,
-  risk_level TEXT CHECK (risk_level IN ('low', 'medium', 'high')) DEFAULT 'low',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  weighted_progress NUMERIC DEFAULT 0,
+  risk_level TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  subcontractorType TEXT,
+  contractorid UUID REFERENCES users(id),
+  status TEXT DEFAULT 'pending',
+  comments TEXT,
+  submitted_by UUID REFERENCES users(id),
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  value NUMERIC,
+  supplyProgress NUMERIC,
+  subcontractorId UUID REFERENCES users(id)
 );
 
 -- Contacts table
@@ -46,37 +82,148 @@ CREATE TABLE contacts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  email TEXT,
   phone TEXT,
   role TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+-- Notifications table
+CREATE TABLE notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('task_assigned', 'project_update', 'system', 'reminder')),
+  from_user_id UUID REFERENCES users(id),
+  from_user_name TEXT,
+  from_user_role TEXT,
+  to_user_id UUID REFERENCES users(id) NOT NULL,
+  project_id UUID REFERENCES projects(id),
+  project_name TEXT,
+  task_id TEXT,
+  data JSONB,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-
+-- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Allow anonymous access to all tables
+-- Allow anonymous access to all tables (for development)
 CREATE POLICY "Allow anonymous access" ON users FOR ALL USING (true);
 CREATE POLICY "Allow anonymous access" ON projects FOR ALL USING (true);
 CREATE POLICY "Allow anonymous access" ON project_items FOR ALL USING (true);
 CREATE POLICY "Allow anonymous access" ON contacts FOR ALL USING (true);
+CREATE POLICY "Allow anonymous access" ON notifications FOR ALL USING (true);
 
-
-ALTER TABLE contacts DROP COLUMN email;
-
--- Update the CHECK constraint to include all the roles used in your application
-ALTER TABLE users DROP CONSTRAINT users_role_check;
-
-ALTER TABLE users ADD CONSTRAINT users_role_check 
-CHECK (role IN ('consultant', 'mainConsultant', 'owner', 'contractor', 'client', 'admin'));
-
+-- Insert default main consultant
 INSERT INTO users (name, email, phone, role, password, approved, is_main_consultant)
-VALUES ('محمد الكاشف', 'mohamedelkashif1983@gmail.com', '0123456789', 'mainConsultant', '123456', true, true);
+VALUES ('محمد الكاشف', 'mohamedelkashif1983@gmail.com', '0123456789', 'mainConsultant', '123456', true, true)
+ON CONFLICT (email) DO NOTHING;
+
+-- Create indexes for better performance
+CREATE INDEX idx_projects_owner_id ON projects(owner_id);
+CREATE INDEX idx_projects_consultant_id ON projects(consultant_id);
+CREATE INDEX idx_projects_contractor_id ON projects(contractor_id);
+CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX idx_project_items_project_id ON project_items(project_id);
+CREATE INDEX idx_project_items_status ON project_items(status);
+CREATE INDEX idx_project_items_subcontractor_type ON project_items(subcontractorType);
+CREATE INDEX idx_notifications_to_user_id ON notifications(to_user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_parent_id ON users(parent_id);
+CREATE INDEX idx_users_type ON users(type);
 
 
-mohamedelkashif1983@gmail.com
+
+-- Add missing fields to project_items table
+
+-- Add subcontractorType field
+ALTER TABLE project_items 
+ADD COLUMN IF NOT EXISTS subcontractorType TEXT;
+
+-- Add subcontractorId field  
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS subcontractorId UUID REFERENCES users(id);
+
+-- Add item_number field if missing
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS item_number TEXT;
+
+-- Add other missing fields that might be needed
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS start_date DATE;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS end_date DATE;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS execution_time INTEGER DEFAULT 0;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS weighted_progress NUMERIC DEFAULT 0;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS risk_level TEXT;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS value NUMERIC DEFAULT 0;
+
+ALTER TABLE project_items
+ADD COLUMN IF NOT EXISTS supplyProgress NUMERIC DEFAULT 0;
+
+-- Check what fields we have now
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'project_items' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+
+ALTER TABLE project_items ADD COLUMN IF NOT EXISTS workflow_history JSONB DEFAULT '[]';
+ALTER TABLE project_items ADD COLUMN IF NOT EXISTS assigned_to_user_id UUID REFERENCES users(id);
+ALTER TABLE project_items ADD COLUMN IF NOT EXISTS assigned_to_role VARCHAR(50);
+
+-- Update existing statuses to new detailed statuses
+UPDATE project_items SET status = 'draft' WHERE status = 'pending';
+UPDATE project_items SET status = 'pending_contractor_review' WHERE status = 'submitted';
+
+-- Add indexes for better performance on workflow queries
+CREATE INDEX IF NOT EXISTS idx_project_items_assigned_to_user ON project_items(assigned_to_user_id);
+CREATE INDEX IF NOT EXISTS idx_project_items_assigned_to_role ON project_items(assigned_to_role);
+CREATE INDEX IF NOT EXISTS idx_project_items_subcontractor_type ON project_items(subcontractorType);
+CREATE INDEX IF NOT EXISTS idx_project_items_workflow ON project_items(project_id, subcontractorType, status);
+
+-- Create a view for bunch status summary
+CREATE OR REPLACE VIEW project_item_bunches AS
+SELECT 
+    project_id,
+    subcontractorType as bunch_type,
+    status,
+    assigned_to_role,
+    COUNT(*) as item_count,
+    COUNT(CASE WHEN status LIKE '%_approved' THEN 1 END) as approved_count,
+    COUNT(CASE WHEN status = 'modification_requested' THEN 1 END) as modification_count,
+    COUNT(CASE WHEN status LIKE 'pending_%' THEN 1 END) as pending_count,
+    MIN(created_at) as first_item_created,
+    MAX(updated_at) as last_updated
+FROM project_items 
+WHERE subcontractorType IS NOT NULL
+GROUP BY project_id, subcontractorType, status, assigned_to_role;
+
+-- Add comments for documentation
+COMMENT ON COLUMN project_items.workflow_history IS 'JSON array tracking workflow progression history for return logic';
+COMMENT ON COLUMN project_items.assigned_to_user_id IS 'User ID who can currently act on this item';
+COMMENT ON COLUMN project_items.assigned_to_role IS 'Role that can currently act on this item';
+
+-- Sample data migration for existing items (adjust as needed)
+-- Set initial assignment for existing items
+UPDATE project_items 
+SET assigned_to_role = 'subcontractor',
+    workflow_history = '[]'
+WHERE assigned_to_role IS NULL;

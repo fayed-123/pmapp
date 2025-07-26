@@ -22,66 +22,110 @@ export interface User {
 }
 
 export interface Project {
-  id?: string;
+  id: string;
   name: string;
-  desc?: string;
-  start: string;
-  end: string;
-  ownerId: string;
-  consultantId: string;
-  contractorId: string;
-  status: "pending" | "published" | "active" | "closed";
+  description?: string;
+  
+  // Dates - use consistent naming
+  start_date?: string;
+  end_date?: string;
+  
+  // Progress fields
   completion: number;
-  timeElapsed: number;
+  time_elapsed: number;
+  expected_days: number;
   performance: number;
-  created: string;
-  expectedDays: number;
-  description: string;
-  contractValue: number;
-  advancePaymentPercentage: number;
-  workGuaranteePercentage: number;
-  materialDeliveryPaymentPercentage: number;
-  completedWorkPaymentPercentage: number;
+  
+  // Status and metadata
+  status: "pending" | "published" | "active" | "closed";
+  created_by?: string;
+  created_at?: string;
+  
+  // Main team assignments - use database field names
+  owner_id?: string;
+  consultant_id?: string;
+  contractor_id?: string;
+  
+  // Financial fields
+  contract_value: number;
+  advance_payment_percentage: number;
+  work_guarantee_percentage: number;
+  material_delivery_payment_percentage: number;
+  completed_work_payment_percentage: number;
+  
+  // Keep camelCase for backward compatibility
+  contractValue?: number;
+  advancePaymentPercentage?: number;
+  workGuaranteePercentage?: number;
+  materialDeliveryPaymentPercentage?: number;
+  completedWorkPaymentPercentage?: number;
+  
+  // Other consultant/contractor IDs
+  general_consultant_id?: string;
+  main_consultant_id?: string;
   generalConsultantId?: string;
   mainConsultantId?: string;
+  
+  // Legacy fields
+  contractorid?: string;
+  subcontractor_id?: string;
+  subconsultant_id?: string;
+  subcontractorId?: string;
+  show_to_role?: string;
+  
+  // Subconsultant assignments (these match your database)
+  electricalconsultantid?: string;
+  architectconsultantid?: string;
+  mechanicalconsultantid?: string;
+  architect_consultant_id?: string;
+  
+  // Subcontractor assignments (these match your database)
+  electricalcontractorid?: string;
+  architectcontractorid?: string;
+  mechanicalcontractorid?: string;
+  
+  // Computed fields
+  timeElapsed?: number;
+  expectedDays?: number;
   ownerName?: string;
   consultantName?: string;
   contractorName?: string;
   generalConsultantName?: string;
   mainConsultantName?: string;
-  subcontractorId?: string | null;
-  subconsultant_id?: string | null;
-  showToRole?: string;
-  electricalConsultantId?: string | null;
-  architectConsultantId?: string | null;
-  mechanicalConsultantId?: string | null;
-  electricalContractorId?: string;
-  architectContractorId?: string;
-  mechanicalContractorId?: string;
 }
 
 export interface ProjectItem {
   id: string;
   projectId: string;
-  itemNumber: string;
+  itemNumber?: string;
   name: string;
-  progress: number;
-  weight: number;
-  startDate: string; // تاريخ بدء البند
-  endDate: string; // تاريخ انتهاء البند
-  executionTime: number;
-  weightedProgress: number;
-  riskLevel?: "low" | "medium" | "high"; // مستوى الخطر للبند
-  value?: number;
-  supplyProgress?: number; // نسبة إنجاز التوريد
-  subcontractorType?: "architect" | "mechanical" | "electrical";
-  subcontractorId?: string | null;
-  contractorid?: string | null;
-  status?: "pending" | "contractor_approved" | "subconsultant_approved" | "consultant_approved" | "published" | "modification_requested";
+  progress?: number;
+  startDate?: string;
+  endDate?: string;
+  executionTime?: number;
+  weight?: number;
+  weightedProgress?: number;
+  riskLevel?: string;
+  status?: string;
   comments?: string;
   submittedBy?: string;
   reviewedBy?: string;
-  reviewedAt?: string;  
+  reviewedAt?: string;
+  subcontractortype?: string;    
+  subcontractorid?: string;      
+  contractorid?: string;
+  value?: number;
+  supplyprogress?: number;       
+  assigned_to_user_id?: string;
+  assigned_to_role?: string;
+  workflow_history?: WorkflowHistoryEntry[];
+}
+
+export interface WorkflowHistoryEntry {
+  user_id: string;
+  role: string;
+  status: string;
+  timestamp: string;
 }
 
 export interface Contact {

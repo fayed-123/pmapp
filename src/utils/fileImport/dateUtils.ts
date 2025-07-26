@@ -11,7 +11,6 @@ import * as XLSX from 'xlsx';
 export const parseExcelDate = (value: any): string | null => {
   try {
     // التحقق من نوع البيانات
-    console.log("Parsing date value:", value, "type:", typeof value);
     
     // إذا كان التاريخ بالفعل كائن تاريخ
     if (value instanceof Date) {

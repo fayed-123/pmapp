@@ -7,6 +7,7 @@ import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/lib/supabase'; // Import your Supabase client
+import { useAuth } from '@/context/AuthContext';
 
 interface ExcelImporterProps {
   projectId: string;
@@ -25,7 +26,7 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-
+  const { user } = useAuth();
   // Use callback to prevent unnecessary re-renders
   const updateProgress = useCallback((value: number, message: string) => {
     setProgress(value);
@@ -183,6 +184,16 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
           execution_time: item.executionTime,
           weighted_progress: item.weightedProgress,
           risk_level: item.riskLevel || null,
+          // Add the missing workflow fields
+          subcontractortype: item.subcontractortype,   
+          subcontractorid: item.subcontractorid,       
+          contractorid: item.contractorid,
+          status: item.status,
+          assigned_to_user_id: item.assigned_to_user_id,
+          assigned_to_role: item.assigned_to_role,
+          workflow_history: item.workflow_history || [],
+          value: item.value || 0,
+          supplyprogress: item.supplyprogress || 0,    
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
@@ -254,26 +265,20 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
     const totalRows = dataRows.length;
     let processedItems: ProjectItem[] = [];
     
-    console.log(`Processing ${totalRows} total rows in batches of ${batchSize}`);
-    
     // Process in smaller batches with yield to UI thread
     for (let i = 0; i < totalRows; i += batchSize) {
       const endIndex = Math.min(i + batchSize, totalRows);
       const batch = dataRows.slice(i, endIndex);
       
-      console.log(`Processing batch: rows ${i + 1} to ${endIndex} (${batch.length} items)`);
       
       // Allow UI to update between batches
       await new Promise(resolve => setTimeout(resolve, 10));
       
       try {
-        const batchItems = processExcelData(batch, projectId);
+        const batchItems = processExcelData(batch, projectId, user);
         if (batchItems && Array.isArray(batchItems)) {
           processedItems = [...processedItems, ...batchItems];
-          console.log(`Batch processed successfully: ${batchItems.length} items added`);
-        } else {
-          console.warn(`Batch returned invalid data:`, batchItems);
-        }
+        } 
         
         // Update progress (more accurate calculation)
         const processedCount = Math.min(endIndex, totalRows);
@@ -290,7 +295,6 @@ const ExcelImporter: React.FC<ExcelImporterProps> = ({
       }
     }
     
-    console.log(`Total processed items: ${processedItems.length} out of ${totalRows} rows`);
     return processedItems;
   };
 

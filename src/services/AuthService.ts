@@ -29,9 +29,6 @@ class AuthService {
         });
         return null;
       }
-console.log("ROLE:", user.role);
-console.log("PARENT_ID:", user.parent_id);
-console.log("APPROVED:", user.approved);
     const isSubConsultantPending =
   (user.role === "consultant" || user.role === "subconsultant") &&
   user.parent_id &&

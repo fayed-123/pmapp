@@ -62,13 +62,13 @@ const OwnerDashboard: React.FC = () => {
     setIsLoading(true);
     try {
       const allProjects = await loadProjects();
-      const ownerProjects = allProjects.filter(p => p.ownerId === user?.id);
+      const ownerProjects = allProjects.filter(p => p.owner_id === user?.id);
       setProjects(ownerProjects);
 
       // Load user names for display
       const userIds = [...new Set([
-        ...ownerProjects.map(p => p.consultantId),
-        ...ownerProjects.map(p => p.contractorId)
+        ...ownerProjects.map(p => p.consultant_id),
+        ...ownerProjects.map(p => p.contractorid)
       ].filter(Boolean))];
 
       const names: {[key: string]: string} = {};
@@ -138,8 +138,8 @@ const OwnerDashboard: React.FC = () => {
                     projects.map((project, index) => (
                       <tr key={project.id || `project-${index}`} className="border-t hover:bg-gray-50">
                         <td className="p-2">{project.name}</td>
-                        <td className="p-2">{userNames[project.consultantId] || '-'}</td>
-                        <td className="p-2">{userNames[project.contractorId] || '-'}</td>
+                        <td className="p-2">{userNames[project.consultant_id] || '-'}</td>
+                        <td className="p-2">{userNames[project.contractorid] || '-'}</td>
                         <td className="p-2">{project.timeElapsed || 0} يوم</td>
                         <td className="p-2">{project.completion || 0}%</td>
                         <td className="p-2">{project.expectedDays || 0} يوم</td>

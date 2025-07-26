@@ -34,7 +34,6 @@ export const NotificationsProvider: React.FC<{
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-        console.log("NotificationsProvider mounted with userId:", userId);
       const data = await getNotifications(userId);
       setNotifications(data || []);
       

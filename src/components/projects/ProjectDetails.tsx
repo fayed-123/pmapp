@@ -40,8 +40,7 @@ import {
 interface ProjectDetailsProps {
   project: Project;
   currentUser: User;
-  // generalConsultants?: UserOption[];
-  owners?: UserOption[]; // أضفتهم هنا
+  owners?: UserOption[]; 
   consultants?: UserOption[];
   subcontractors?: Subcontractor[];
   subconsultants?: User[];
@@ -51,7 +50,7 @@ interface ProjectDetailsProps {
 interface ProjectDetailsContentProps {
   subcontractors?: Subcontractor[];
   subconsultants?: User[];
-  owners?: UserOption[]; // أضفتهم هنا
+  owners?: UserOption[]; 
   consultants?: UserOption[];
   currentUser: User;
 }
@@ -90,7 +89,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     editProject,
     analysisData,
     refreshProject,
-    // generalConsultants,
+    refreshItems, // Add this new function from context
   } = useProject();
 
   const [selectedSubcontractorId, setSelectedSubcontractorId] =
@@ -108,17 +107,9 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
   useEffect(() => {
     async function fetchSubconsultants() {
       // استخدم generalConsultantId بدلاً من consultantId
-      const consultantId = project.consultantId || project.generalConsultantId;
-
-      console.log("🔍 Project consultantId:", project.consultantId);
-      console.log(
-        "🔍 Project generalConsultantId:",
-        project.generalConsultantId
-      );
-      console.log("🔍 Using consultantId:", consultantId);
+      const consultantId = project.consultant_id || project.generalConsultantId;
 
       if (!consultantId) {
-        console.log("⚠️ No consultantId found");
         return;
       }
 
@@ -129,9 +120,6 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
           (user, index, self) =>
             index === self.findIndex((u) => u.id === user.id)
         );
-
-        console.log("✅ Loaded subconsultants from DB:", subs);
-        console.log("📊 Number of subconsultants:", subs.length);
         setSubconsultants(merged);
       } catch (error) {
         console.error("❌ Error loading subconsultants:", error);
@@ -139,7 +127,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     }
 
     fetchSubconsultants();
-  }, [project.consultantId, project.generalConsultantId]); // ضيف generalConsultantId للـ dependency array
+  }, [project.consultant_id, project.generalConsultantId]); 
 
   // باقي الدوال handlers كما هي
   const handleAddItem = (e: React.FormEvent) => {
@@ -222,13 +210,18 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
 
   const handleSubmitItems = async () => {
     // Implementation needed - will update all pending items to submitted status
+    // This could be used to change status from draft to pending
   };
 
+  // Individual item approval functions - now handled in ItemsCards directly
   const handleApproveItem = async (itemId: string) => {
-    // Implementation needed - update single item status
+    // This will be handled by ItemsCards component directly
+    console.log('Approve item:', itemId);
   };
+  
   const handleRejectItem = async (itemId: string) => {
-    // Implementation needed - update single item status
+    // This will be handled by ItemsCards component directly
+    console.log('Reject item:', itemId);
   };
 
   return (
@@ -246,13 +239,14 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         currentUser={currentUser}
         role={currentUser?.role || ""}
         refreshProject={refreshProject}
-
+        items={items}
       />
 
       <ItemsSection
         items={items}
         canEdit={canEdit}
         canReview={canReview}
+        project={project}
         timeElapsed={project.timeElapsed}
         expectedDays={project.expectedDays}
         onAddItem={() => setShowAddItem(true)}
@@ -263,7 +257,8 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         onDeleteItem={deleteItem}
         onSubmitItems={handleSubmitItems} 
         onApproveItem={handleApproveItem} 
-        onRejectItem={handleRejectItem} 
+        onRejectItem={handleRejectItem}
+        refreshItems={refreshItems} // Pass the refresh function
       />
 
       <ExtractSummaryPage
@@ -283,22 +278,6 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         onAddContact={() => setShowAddContact(true)}
         onDeleteContact={deleteContact}
       />
-
-      {/* عرض المقاولين الفرعيين */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2">المقاولون الفرعيون</h3>
-        {subcontractors && subcontractors.length > 0 ? (
-          <ul className="list-disc list-inside">
-            {subcontractors.map((sub) => (
-              <li key={sub.id}>
-                {sub.name} - {sub.type}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500">لا يوجد مقاولون فرعيون</p>
-        )}
-      </div>
 
       {/* المودالات */}
       <AddItemModal
@@ -332,8 +311,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         isOpen={showEditProject}
         onClose={() => setShowEditProject(false)}
         editProject={editProject.editProject}
-        // generalConsultants={generalConsultants}
-        owners={owners} // لازم تعرفهم في الأب وتمررهم هنا
+        owners={owners} 
         consultants={consultants}
         onProjectChange={editProject.handleEditProjectChange}
         onSubmit={editProject.saveProjectEdit}
@@ -350,7 +328,6 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   project,
   currentUser,
-  // generalConsultants,
   owners: initialOwners,
   consultants: initialConsultants,
   subcontractors,
@@ -361,33 +338,34 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const [consultants, setConsultants] = useState<UserOption[]>(
     initialConsultants || []
   );
+  
   useEffect(() => {
     async function fetchUsers() {
       const users = await loadUsers();
       setOwners(
         users
           .filter((u) => u.role === "owner" && u.approved)
-          .map((u) => ({ value: u.id, label: u.name, role: u.role })) // أضفت role هنا
+          .map((u) => ({ value: u.id, label: u.name, role: u.role }))
       );
 
       setConsultants(
         users
           .filter((u) => u.role === "consultant" && u.approved)
-          .map((u) => ({ value: u.id, label: u.name, role: u.role })) // أضفت role هنا
+          .map((u) => ({ value: u.id, label: u.name, role: u.role }))
       );
     }
     fetchUsers();
   }, []);
+  
   return (
     <ProjectProvider
       project={project}
       currentUser={currentUser}
-      // generalConsultants={generalConsultants}
     >
       <ProjectDetailsContent
         subcontractors={subcontractors}
         subconsultants={subconsultants}
-        owners={owners} // مررهم هنا
+        owners={owners}
         consultants={consultants}
         currentUser={currentUser}
       />

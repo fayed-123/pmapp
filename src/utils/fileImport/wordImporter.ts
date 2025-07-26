@@ -10,20 +10,16 @@ import { parseExcelDate, calculateExecutionTime } from './dateUtils';
  */
 export const processWordData = (text: string, projectId: string): ProjectItem[] => {
   try {
-    console.log("Processing Word document text");
     
     // تقسيم النص إلى أسطر ومعالجة كل سطر
     const lines = text.split('\n')
       .filter(line => line.trim().length > 0);
     
-    console.log(`Found ${lines.length} lines of text`);
     
     return lines.map((line, index) => {
       try {
         // محاولة تحليل السطر إلى رقم البند، الاسم، نسبة الإنجاز، تاريخ البدء، تاريخ الانتهاء
         const parts = line.split(/[-–—]/).map(part => part.trim());
-        
-        console.log(`Line ${index} parts:`, parts);
         
         let itemNumber = parts[0]?.match(/^\d+$/) ? parts[0] : (index + 1).toString();
         let name = parts[0]?.match(/^\d+$/) ? (parts[1] || '') : (parts[0] || '');

@@ -1,16 +1,21 @@
+// Update your SubContractorDashboard.tsx
+
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/Modal";
 import ProjectDetails from "../projects/ProjectDetails";
+import { Project } from "@/lib/types";
+import { loadProjectsForSubcontractor } from "@/lib/db";
 
-const getProjectStatus = (project: any) => {
-  const { completion, time_elapsed, expected_days } = project;
+const getProjectStatus = (project: Project) => {
+  const completion = project.completion || 0;
+  const timeElapsed = project.timeElapsed || 0;
+  const expectedDays = project.expectedDays || 30;
 
-  if (completion > 0 && time_elapsed > 0 && expected_days > 0) {
-    const timePercentage = (time_elapsed / expected_days) * 100;
+  if (completion > 0 && timeElapsed > 0 && expectedDays > 0) {
+    const timePercentage = (timeElapsed / expectedDays) * 100;
     if (completion > timePercentage) {
       return (
         <span className="text-green-700 font-bold flex items-center gap-1">
@@ -30,10 +35,10 @@ const getProjectStatus = (project: any) => {
 };
 
 const SubContractorDashboard: React.FC = () => {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [mainContractorName, setMainContractorName] = useState<string>("-");
   const [loading, setLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
 
@@ -49,11 +54,13 @@ const SubContractorDashboard: React.FC = () => {
       }
 
       const user = JSON.parse(userStr);
-      setCurrentUser(user); // حفظ بيانات المستخدم
+      setCurrentUser(user);
 
+      // Load main contractor name
       if (user.contractor_id || user.parentId) {
         const parentId = user.contractor_id || user.parentId;
-
+        
+        const { supabase } = await import("@/lib/supabase");
         const { data: contractorData, error: contractorError } = await supabase
           .from("users")
           .select("name")
@@ -65,16 +72,12 @@ const SubContractorDashboard: React.FC = () => {
         }
       }
 
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .or(
-          `electricalcontractorid.eq.${user.id},architectcontractorid.eq.${user.id},mechanicalcontractorid.eq.${user.id}`
-        );
-
-      if (!error) {
-        setProjects(data);
-      } else {
+      try {
+        // ✅ Use proper database function
+        const projectsData = await loadProjectsForSubcontractor(user.id, user.type);
+        setProjects(projectsData);
+      } catch (error) {
+        console.error("Error loading subcontractor projects:", error);
         setProjects([]);
       }
 
@@ -84,7 +87,8 @@ const SubContractorDashboard: React.FC = () => {
     fetchSubcontractorProjects();
   }, []);
 
-  const handleViewProject = (project: any) => {
+  const handleViewProject = (project: Project) => {
+    console.log("📋 Selected project:", project);
     setSelectedProject(project);
     setShowProjectDetails(true);
   };
@@ -106,20 +110,16 @@ const SubContractorDashboard: React.FC = () => {
     }
 
     const user = JSON.parse(userStr);
-    setCurrentUser(user); // تحديث currentUser عند إعادة التحميل
+    setCurrentUser(user);
 
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .or(
-        `electricalcontractorid.eq.${user.id},architectcontractorid.eq.${user.id},mechanicalcontractorid.eq.${user.id}`
-      );
-
-    if (!error) {
-      setProjects(data);
-    } else {
+    try {
+      const projectsData = await loadProjectsForSubcontractor(user.id, user.type);
+      setProjects(projectsData);
+    } catch (error) {
+      console.error("Error reloading projects:", error);
       setProjects([]);
     }
+    
     setLoading(false);
   };
 
@@ -161,8 +161,6 @@ const SubContractorDashboard: React.FC = () => {
                 <td className="p-2">{proj.completion || 0}%</td>
                 <td className="p-2">{getProjectStatus(proj)}</td>
                 <td className="p-2">{mainContractorName}</td>
-
-                {/* عمود التحكم */}
                 <td className="p-2 flex justify-center">
                   <Button
                     variant="ghost"

@@ -123,73 +123,88 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       const expectedDays = calculateExpectedDays(formData.start, formData.end);
 
       const newProject: Project = {
+        id: '',
+
+        // Basic project info
         name: formData.name,
-        desc: formData.desc,
-        start: formData.start,
-        description: formData.desc,
-        end: formData.end,
-        ownerId: formData.ownerId,
-        consultantId: formData.consultantId,
-        contractorId: formData.contractorId,
-        // generalConsultantId: formData.generalConsultantId,
-        status: "active",
+        description: formData.desc, // Changed from 'desc'
+        start_date: formData.start,
+        end_date: formData.end,
+
+        // Team assignments
+        owner_id: formData.ownerId,
+        consultant_id: formData.consultantId,
+        contractor_id: formData.contractorId,
+        main_consultant_id: user.id,
+
+        // Status and progress
+        status: "pending",
         completion: 0,
         timeElapsed: 0,
+        time_elapsed: 0, // Add database field name
         performance: 0,
-        created: new Date().toISOString(),
         expectedDays: expectedDays,
-        // Financial fields
-        contractValue: formData.contractValue
-          ? parseFloat(formData.contractValue)
-          : 0,
-        advancePaymentPercentage: formData.advancePaymentPercentage
-          ? parseFloat(formData.advancePaymentPercentage)
-          : 0,
-        workGuaranteePercentage: formData.workGuaranteePercentage
-          ? parseFloat(formData.workGuaranteePercentage)
-          : 0,
-        materialDeliveryPaymentPercentage:
-          formData.materialDeliveryPaymentPercentage
-            ? parseFloat(formData.materialDeliveryPaymentPercentage)
-            : 0,
-        completedWorkPaymentPercentage: formData.completedWorkPaymentPercentage
-          ? parseFloat(formData.completedWorkPaymentPercentage)
-          : 0,
-        mainConsultantId: user.id,
-      };
+        expected_days: expectedDays, // Add database field name
 
+        // Timestamps
+        created_at: new Date().toISOString(),
+
+        // Financial fields with correct names
+        contractValue: formData.contractValue ? parseFloat(formData.contractValue) : 0,
+        contract_value: formData.contractValue ? parseFloat(formData.contractValue) : 0, // Add database field name
+
+        advancePaymentPercentage: formData.advancePaymentPercentage ? parseFloat(formData.advancePaymentPercentage) : 0,
+        advance_payment_percentage: formData.advancePaymentPercentage ? parseFloat(formData.advancePaymentPercentage) : 0, // Add database field name
+
+        workGuaranteePercentage: formData.workGuaranteePercentage ? parseFloat(formData.workGuaranteePercentage) : 0,
+        work_guarantee_percentage: formData.workGuaranteePercentage ? parseFloat(formData.workGuaranteePercentage) : 0, // Add database field name
+
+        materialDeliveryPaymentPercentage: formData.materialDeliveryPaymentPercentage ? parseFloat(formData.materialDeliveryPaymentPercentage) : 0,
+        material_delivery_payment_percentage: formData.materialDeliveryPaymentPercentage ? parseFloat(formData.materialDeliveryPaymentPercentage) : 0, // Add database field name
+
+        completedWorkPaymentPercentage: formData.completedWorkPaymentPercentage ? parseFloat(formData.completedWorkPaymentPercentage) : 0,
+        completed_work_payment_percentage: formData.completedWorkPaymentPercentage ? parseFloat(formData.completedWorkPaymentPercentage) : 0, // Add database field name
+
+        // Optional fields with defaults
+        electricalconsultantid: null,
+        architectconsultantid: null,
+        mechanicalconsultantid: null,
+        electricalcontractorid: null,
+        architectcontractorid: null,
+        mechanicalcontractorid: null,
+        created_by: user.id
+      };
       const success = await saveProject(newProject);
       if (success) {
         toast({
           title: "تم إنشاء المشروع",
           description: "تم حفظ المشروع بنجاح",
         });
- const assignedUserIds = [
-    { id: newProject.ownerId, role: "المالك" },
-    { id: newProject.consultantId, role: "الاستشاري المشرف" },
-    { id: newProject.contractorId, role: "المقاول" },
-    { id: newProject.generalConsultantId, role: "الاستشاري العام" },
-  ].filter((u) => u.id && u.id !== user.id); // نتأكد أنه مش بيرسل لنفسه
+        const assignedUserIds = [
+          { id: newProject.owner_id, role: "المالك" },
+          { id: newProject.consultant_id, role: "الاستشاري المشرف" },
+          { id: newProject.contractor_id, role: "المقاول" },
+          { id: newProject.generalConsultantId, role: "الاستشاري العام" },
+        ].filter((u) => u.id && u.id !== user.id); // نتأكد أنه مش بيرسل لنفسه
 
-  for (const userInfo of assignedUserIds) {
-      console.log("Sending notification to", userInfo.id);
-    await supabase.from("notifications").insert([
-      {
-        title: "تم تعيينك في مشروع جديد",
-        message: `تم تعيينك كـ ${userInfo.role} في المشروع "${newProject.name}" بواسطة ${user.name}`,
-        type: "system",
-        from_user_id: user.id,
-        from_user_name: user.name,
-        from_user_role: user.role,
-        to_user_id: userInfo.id,
-        data: {
-          action: "assigned_to_project",
-          projectId: newProject.id,
-          projectName: newProject.name,
-        },
-      },
-    ]);
-  }
+        for (const userInfo of assignedUserIds) {
+          await supabase.from("notifications").insert([
+            {
+              title: "تم تعيينك في مشروع جديد",
+              message: `تم تعيينك كـ ${userInfo.role} في المشروع "${newProject.name}" بواسطة ${user.name}`,
+              type: "system",
+              from_user_id: user.id,
+              from_user_name: user.name,
+              from_user_role: user.role,
+              to_user_id: userInfo.id,
+              data: {
+                action: "assigned_to_project",
+                projectId: newProject.id,
+                projectName: newProject.name,
+              },
+            },
+          ]);
+        }
 
         // Reset form
         setFormData({

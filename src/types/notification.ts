@@ -1,3 +1,4 @@
+// /types/notification.ts
 export interface Notification {
   id: string;
   title: string;
@@ -10,8 +11,26 @@ export interface Notification {
   project_id?: string;
   project_name?: string;
   task_id?: string;
+  data?: any;
   is_read: boolean;
-  data?: any; // معلومات إضافية
   created_at: string;
   updated_at: string;
+}
+
+export interface NotificationTriggerData {
+  currentUser: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  project: {
+    id: string;
+    name: string;
+  };
+  targetUser?: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  additionalData?: any;
 }

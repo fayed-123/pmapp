@@ -24,7 +24,6 @@ export async function loadUsers(): Promise<User[]> {
       approved: user.approved,
     }));
 
-    console.log('Loaded users from DB:', convertedUsers);
 
     // إنشاء مستشار رئيسي افتراضي لو ما فيش مستخدمين
     if (convertedUsers.length === 0) {
@@ -79,13 +78,31 @@ export async function getUserById(id: string): Promise<User | undefined> {
 }
 
 export async function getUserNameById(id: string): Promise<string> {
-  if (!id) return "-";
+  if (!id) {
+    return "-";
+  }
 
   try {
-    const user = await getUserById(id);
-    return user?.name || "-";
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, name, role')
+      .eq('id', id)
+      .single();
+    
+    
+    if (error) {
+      console.error("getUserNameById: database error:", error);
+      return "-";
+    }
+    
+    if (!user) {
+      return "-";
+    }
+    
+    return user.name || "-";
   } catch (error) {
-    console.error("خطأ في getUserNameById:", error);
+    console.error("getUserNameById: exception:", error);
     return "-";
   }
 }
@@ -166,7 +183,6 @@ export async function loadSubcontractorsForCurrentUser(contractorId: string) {
 
 
 export async function deleteSubcontractor(id: string): Promise<void> {
-  console.log(`Attempting to delete subcontractor with id: ${id}`);
 
   const { data, error } = await supabase
     .from('users')
@@ -180,7 +196,6 @@ export async function deleteSubcontractor(id: string): Promise<void> {
     throw new Error(error.message);
   }
 
-  console.log('Deleted rows:', data);
 }
 
 // إضافة استشاري فرعي
@@ -211,7 +226,6 @@ export async function addSubconsultantUser({
 
 // تحميل الاستشاريين الفرعيين
 export async function loadSubconsultantsForCurrentUser(consultantId: string) {
-  console.log("🚀 Loading subconsultants for consultantId:", consultantId);
   
   try {
     const { data, error } = await supabase
@@ -219,9 +233,6 @@ export async function loadSubconsultantsForCurrentUser(consultantId: string) {
       .select('*')
       // .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
       .eq('role', 'subconsultant');
-    
-    console.log("📊 Supabase query result:", data);
-    console.log("❌ Supabase error:", error);
     
     if (error) {
       console.error('Error loading subconsultants:', error);

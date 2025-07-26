@@ -10,7 +10,11 @@ export {
   setCurrentUser,
   loadSubcontractorsForCurrentUser,
   addSubcontractorUser, 
-  deleteSubcontractor
+  deleteSubcontractor,
+  addSubconsultantUser,
+  loadSubconsultantsForCurrentUser,
+  deleteSubconsultant,
+  getSubconsultantsForProject
 } from './users';
 
 // Project related functions
@@ -18,14 +22,18 @@ export {
   loadProjects,
   saveProject,
   getProjectById,
-  deleteProject
+  deleteProject,
+  loadProjectsForSubcontractor,
+  loadProjectsForSubconsultant
 } from './projects';
 
 // Project items related functions
 export {
   loadItems,
+  loadProjectItems, // Main function for loading project items with filtering
   saveItem,
-  deleteItemsByProjectId
+  deleteItemsByProjectId,
+  updateItemRiskLevels
 } from './items';
 
 // Contact related functions
@@ -41,13 +49,14 @@ export {
   updateProjectCompletion
 } from './projectMetrics';
 
-
-// Import the functions you need here
+// Utility functions for project deletion
 import { deleteProject } from './projects';
 import { deleteItemsByProjectId } from './items';
 import { deleteContactsByProjectId } from './contacts';
 
-// Delete project with all related data
+/**
+ * Delete project with all related data
+ */
 export async function deleteProjectWithAllData(projectId: string): Promise<void> {
   try {
     // Delete related items and contacts first

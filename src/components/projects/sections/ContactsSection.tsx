@@ -70,17 +70,7 @@ const ContactsSection: React.FC<ContactsSectionProps> = ({
                   لم يتم إضافة أي جهات اتصال لهذا المشروع بعد.
                   {canEdit && ' ابدأ بإضافة جهة اتصال جديدة.'}
                 </p>
-                {canEdit && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={onAddContact}
-                    className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 flex items-center gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    إضافة أول جهة اتصال
-                  </Button>
-                )}
+                
               </div>
             </div>
           </div>

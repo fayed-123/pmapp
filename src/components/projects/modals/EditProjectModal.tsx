@@ -34,8 +34,6 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   onProjectChange,
   onSubmit,
 }) => {
-  console.log("owners:", owners);
-console.log("consultants:", consultants);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="تعديل بيانات المشروع">
