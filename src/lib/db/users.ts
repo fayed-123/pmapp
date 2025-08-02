@@ -20,7 +20,7 @@ export async function loadUsers(): Promise<User[]> {
       ...user,
       isMainConsultant: user.is_main_consultant,
       parentId: user.parent_id,
-      subcontractorType: user.subcontractor_type, // ✅ ده هو العمود الصح من الجدول
+      subcontractorType: user.type, // ✅ ده هو العمود الصح من الجدول
       approved: user.approved,
     }));
 
@@ -145,7 +145,7 @@ export async function addSubcontractorUser({ name, type, contractorId }: {
       password,
       role: 'subcontractor',
       parent_id: contractorId,
-      subcontractor_type: type,
+      // subcontractor_type: type,
       type,
       approved: true
     })
@@ -163,7 +163,7 @@ export async function loadSubcontractorsForCurrentUser(contractorId: string) {
   const { data, error } = await supabase
     .from('users')
     // أضف contractor_id أو parent_id (حسب تسميتك في قاعدة البيانات)
-    .select('id, name, type, parent_id')
+    .select('id, name, type, parent_id,created_at')
     .eq('role', 'subcontractor')
     .eq('parent_id', contractorId);
 
@@ -177,7 +177,8 @@ export async function loadSubcontractorsForCurrentUser(contractorId: string) {
     id: sub.id,
     name: sub.name,
     type: sub.type,
-    contractor_id: sub.parent_id,  // عشان يتوافق مع النوع
+    contractor_id: sub.parent_id,
+    created_at: sub.created_at,  // عشان يتوافق مع النوع
   }));
 }
 
@@ -217,12 +218,11 @@ export async function addSubconsultantUser({
     role: "subconsultant",
     parent_id: consultantId,
     email,            // لازم تبعت الايميل
-    password: "123456" // او أي باسورد افتراضي لازم لو الحقل موجود ومطلوب
+    password: "123456" ,// او أي باسورد افتراضي لازم لو الحقل موجود ومطلوب
   });
 
   if (error) throw error;
 }
-
 
 // تحميل الاستشاريين الفرعيين
 export async function loadSubconsultantsForCurrentUser(consultantId: string) {
@@ -231,7 +231,7 @@ export async function loadSubconsultantsForCurrentUser(consultantId: string) {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      // .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
+      .eq('parent_id', consultantId) // عدل هنا من parent_consultant_id إلى parent_id
       .eq('role', 'subconsultant');
     
     if (error) {

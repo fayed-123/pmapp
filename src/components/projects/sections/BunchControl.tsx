@@ -35,6 +35,7 @@ import {
   Save,
   Edit
 } from 'lucide-react';
+import { canUserEdit } from '@/lib/db/items';
 
 interface BunchControlProps {
   project: Project;
@@ -278,7 +279,7 @@ const BunchControl: React.FC<BunchControlProps> = ({
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "غير محدد";
-    return new Date(dateString).toLocaleDateString("ar-SA");
+    return new Date(dateString).toLocaleDateString();
   };
 
   // Enhanced workflow status indicator
@@ -455,14 +456,8 @@ const BunchControl: React.FC<BunchControlProps> = ({
 
   const canUserEditItem = (item: ProjectItem): boolean => {
     if (!canEdit || !currentUser) return false;
-    
+    return canUserEdit(item, currentUser, project);  
     // Check if user is assigned to this item or has permission to edit
-    return (
-      item.assigned_to_user_id === currentUser.id ||
-      item.subcontractorid === currentUser.id ||
-      (currentUser.role === 'mainConsultant') ||
-      (currentUser.role === 'consultant' && project.consultant_id === currentUser.id)
-    );
   };
 
   if (isLoading) {
@@ -568,7 +563,8 @@ const BunchControl: React.FC<BunchControlProps> = ({
                         <Send className="w-4 h-4 mr-1" />
                         إرسال للمرحلة التالية
                       </Button>
-                    )}
+                    )
+                    }
 
                     {bunch.can_request_modification && (
                       <Button

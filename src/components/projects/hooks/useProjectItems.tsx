@@ -15,12 +15,19 @@ export const useProjectItems = (projectId: string) => {
   useEffect(() => {
     const loadProjectItemsData = async () => {
       if (!projectId || !user) return;
-    
+
       setIsLoading(true);
       try {
-        console.log("🔧 useProjectItems calling loadItems with:", { user: user.id, projectId });
+        console.log("🔧 useProjectItems calling loadItems with:", {
+          user: user.id,
+          projectId,
+        });
         const projectItems = await loadItems(user, projectId);
-        console.log("🔧 useProjectItems got back:", projectItems.length, "items");
+        console.log(
+          "🔧 useProjectItems got back:",
+          projectItems.length,
+          "items"
+        );
         setItems(projectItems);
       } catch (error) {
         console.error("Error loading project items:", error);
@@ -28,7 +35,7 @@ export const useProjectItems = (projectId: string) => {
         setIsLoading(false);
       }
     };
-  
+
     loadProjectItemsData();
   }, [projectId, user]);
 
@@ -38,7 +45,6 @@ export const useProjectItems = (projectId: string) => {
       updateProjectCompletion(projectId);
     }
   }, [items, projectId]);
-  
 
   const refreshItems = async () => {
     try {
@@ -47,7 +53,7 @@ export const useProjectItems = (projectId: string) => {
       const updatedItems = await loadItems(user, projectId);
       setItems(updatedItems);
     } catch (error) {
-      console.error('Error refreshing items:', error);
+      console.error("Error refreshing items:", error);
     } finally {
       setIsLoading(false);
     }
@@ -78,8 +84,8 @@ export const useProjectItems = (projectId: string) => {
     }
 
     // Auto-assign subcontractor type based on user type
-    const userItemType = getItemTypeForUser(user.type || '');
-    
+    const userItemType = getItemTypeForUser(user.type || "");
+
     const item: ProjectItem = {
       id: Date.now().toString(),
       projectId: projectId,
@@ -97,15 +103,16 @@ export const useProjectItems = (projectId: string) => {
       weightedProgress: 0,
       // Auto-assign type based on user
       subcontractortype: userItemType || newItem.subcontractortype,
-      subcontractorid: user.role === 'subcontractor' ? user.id : newItem.subcontractorid,
-      contractorid: user.role === 'contractor' ? user.id : user.parentId,
+      subcontractorid:
+        user.role === "subcontractor" ? user.id : newItem.subcontractorid,
+      contractorid: user.role === "contractor" ? user.id : user.parentId,
       value: newItem.value || 0,
       supplyprogress: newItem.supplyprogress || 0,
-      status: 'draft',
-      
+      status: "draft",
+
       assigned_to_user_id: user.id, // Assign to current user initially
       assigned_to_role: user.role, // Assign to current user's role
-      workflow_history: [] // Start with empty history
+      workflow_history: [], // Start with empty history
     };
 
     try {
@@ -113,9 +120,9 @@ export const useProjectItems = (projectId: string) => {
       if (success) {
         setItems((prev) => [...prev, item]);
         await updateProjectCompletion(projectId);
-        toast({ 
-          title: "تمت الإضافة", 
-          description: "تم إضافة البند بنجاح" 
+        toast({
+          title: "تمت الإضافة",
+          description: "تم إضافة البند بنجاح",
         });
         return item;
       } else {
@@ -157,8 +164,8 @@ export const useProjectItems = (projectId: string) => {
 
     // Check permissions for subconsultants and subcontractors
     if (user.role === "subconsultant" || user.role === "subcontractor") {
-      const userItemType = getItemTypeForUser(user.type || '');
-      
+      const userItemType = getItemTypeForUser(user.type || "");
+
       // Check if item type matches user type
       if (updatedItem.subcontractortype !== userItemType) {
         toast({
@@ -171,7 +178,7 @@ export const useProjectItems = (projectId: string) => {
 
       // Check if user owns the item or is the responsible contractor
       if (
-        updatedItem.subcontractorid !== user.id && 
+        updatedItem.subcontractorid !== user.id &&
         updatedItem.contractorid !== user.id
       ) {
         toast({
@@ -190,9 +197,9 @@ export const useProjectItems = (projectId: string) => {
           prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
         );
         await updateProjectCompletion(projectId);
-        toast({ 
-          title: "تم التعديل", 
-          description: "تم تعديل البند بنجاح" 
+        toast({
+          title: "تم التعديل",
+          description: "تم تعديل البند بنجاح",
         });
         return true;
       }
@@ -231,10 +238,9 @@ export const useProjectItems = (projectId: string) => {
 
       // Check permissions for subconsultants and subcontractors
       if (user.role === "subconsultant" || user.role === "subcontractor") {
-        const userItemType = getItemTypeForUser(user.type || '');
-        
+        const userItemType = getItemTypeForUser(user.type || "");
         // Check if item type matches user type
-        if (itemToDelete.subcontractorType !== userItemType) {
+        if (itemToDelete.subcontractortype !== userItemType) {
           toast({
             title: "غير مسموح",
             description: "لا يمكنك حذف بند لا يخص تخصصك",
@@ -245,7 +251,7 @@ export const useProjectItems = (projectId: string) => {
 
         // Check if user owns the item or is the responsible contractor
         if (
-          itemToDelete.subcontractorId !== user.id && 
+          itemToDelete.subcontractorid !== user.id &&
           itemToDelete.contractorid !== user.id
         ) {
           toast({
@@ -262,14 +268,14 @@ export const useProjectItems = (projectId: string) => {
         .from("project_items")
         .delete()
         .eq("id", itemId);
-      
+
       if (error) throw error;
 
       setItems((prev) => prev.filter((item) => item.id !== itemId));
       await updateProjectCompletion(projectId);
-      toast({ 
-        title: "تم الحذف", 
-        description: "تم حذف البند بنجاح" 
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف البند بنجاح",
       });
     } catch (error) {
       console.error("Error deleting item:", error);
@@ -292,15 +298,16 @@ export const useProjectItems = (projectId: string) => {
     }
 
     try {
-      const userItemType = getItemTypeForUser(user.type || '');
-      
+      const userItemType = getItemTypeForUser(user.type || "");
+
       // Auto-assign user type to all imported items
       const itemsWithType = importedItems.map((item) => ({
         ...item,
         subcontractortype: userItemType || item.subcontractortype,
-        subcontractorid: user.role === 'subcontractor' ? user.id : item.subcontractorid,
-        contractorid: user.role === 'contractor' ? user.id : user.parentId,
-        status: 'pending' as const
+        subcontractorid:
+          user.role === "subcontractor" ? user.id : item.subcontractorid,
+        contractorid: user.role === "contractor" ? user.id : user.parentId,
+        status: "pending" as const,
       }));
 
       const savePromises = itemsWithType.map((item) => saveItem(item));
@@ -330,6 +337,6 @@ export const useProjectItems = (projectId: string) => {
     updateItem,
     deleteItem,
     importItems,
-    refreshItems
+    refreshItems,
   };
 };

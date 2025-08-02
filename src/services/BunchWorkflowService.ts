@@ -372,6 +372,10 @@ const getNextStageInfo = (currentUser: User, project: Project, bunchType: string
  */
 const canSendBunchToNextStage = (items: any[], currentUser: User): boolean => {
     if (!items || items.length === 0) return false;
+        console.log('currentUser:', currentUser);
+    console.log('items statuses:', items.map(i => i.status));
+    console.log('items assigned_to_user_id:', items.map(i => i.assigned_to_user_id));
+    console.log('items assigned_to_role:', items.map(i => i.assigned_to_role));
 
     // Check if all items are assigned to current user or their role
     const allAssignedToUser = items.every(item =>
@@ -386,7 +390,8 @@ const canSendBunchToNextStage = (items: any[], currentUser: User): boolean => {
         case 'subcontractor':
             return items.every(item =>
                 item.status === 'draft' ||
-                item.status === 'modification_requested'
+                item.status === 'modification_requested'||
+                item.status === 'pending' 
             );
 
         case 'contractor':

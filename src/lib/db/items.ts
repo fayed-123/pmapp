@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { ProjectItem, User } from "../types";
+import { Project, ProjectItem, User } from "../types";
 import { getItemTypeForUser, hasFullAccess, hasFilteredAccess } from "@/lib/utils/typeMapping";
 
 // Add a flag to prevent infinite loops
@@ -239,7 +239,17 @@ function calculateRiskLevel(item: ProjectItem): "low" | "medium" | "high" {
 
   return riskLevel;
 }
-
+ export function canUserEdit (item: ProjectItem ,currentUser:User , project:Project): boolean {
+    if (!currentUser) return false;
+    if(item.status=="published") return false;
+    // Check if user is assigned to this item or has permission to edit
+    return (
+      (item.assigned_to_user_id === currentUser.id ||
+      item.subcontractorid === currentUser.id ||
+      (currentUser.role === 'mainConsultant') ||
+      (currentUser.role === 'consultant' && project.consultant_id === currentUser.id)
+   ) );
+  };
 /**
  * Save item function with proper database field mapping
  */
@@ -262,10 +272,10 @@ export async function saveItem(item: ProjectItem): Promise<boolean> {
       reviewed_by: item.reviewedBy,
       reviewed_at: item.reviewedAt,
       subcontractorType: item.subcontractortype,
-      subcontractorId: item.subcontractorid,
+      subcontractorid: item.subcontractorid,
       contractorid: item.contractorid,
       value: item.value,
-      supplyProgress: item.supplyprogress
+      supplyprogress: item.supplyprogress
     };
 
     if (item.id) {

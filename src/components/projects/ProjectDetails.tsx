@@ -40,7 +40,7 @@ import {
 interface ProjectDetailsProps {
   project: Project;
   currentUser: User;
-  owners?: UserOption[]; 
+  owners?: UserOption[];
   consultants?: UserOption[];
   subcontractors?: Subcontractor[];
   subconsultants?: User[];
@@ -50,7 +50,7 @@ interface ProjectDetailsProps {
 interface ProjectDetailsContentProps {
   subcontractors?: Subcontractor[];
   subconsultants?: User[];
-  owners?: UserOption[]; 
+  owners?: UserOption[];
   consultants?: UserOption[];
   currentUser: User;
 }
@@ -127,7 +127,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     }
 
     fetchSubconsultants();
-  }, [project.consultant_id, project.generalConsultantId]); 
+  }, [project.consultant_id, project.generalConsultantId]);
 
   // باقي الدوال handlers كما هي
   const handleAddItem = (e: React.FormEvent) => {
@@ -137,10 +137,10 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
     setShowAddItem(false);
   };
 
-  const handleEditItem = (e: React.FormEvent) => {
+  const handleEditItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
-    if (updateItem(editingItem)) {
+    if (await updateItem(editingItem)) {
       setEditingItem(null);
       setShowEditItem(false);
     }
@@ -216,12 +216,12 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
   // Individual item approval functions - now handled in ItemsCards directly
   const handleApproveItem = async (itemId: string) => {
     // This will be handled by ItemsCards component directly
-    console.log('Approve item:', itemId);
+    console.log("Approve item:", itemId);
   };
-  
+
   const handleRejectItem = async (itemId: string) => {
     // This will be handled by ItemsCards component directly
-    console.log('Reject item:', itemId);
+    console.log("Reject item:", itemId);
   };
 
   return (
@@ -255,8 +255,8 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         onShowAnalysis={() => setShowAnalysis(true)}
         onEditItem={handleStartEditItem}
         onDeleteItem={deleteItem}
-        onSubmitItems={handleSubmitItems} 
-        onApproveItem={handleApproveItem} 
+        onSubmitItems={handleSubmitItems}
+        onApproveItem={handleApproveItem}
         onRejectItem={handleRejectItem}
         refreshItems={refreshItems} // Pass the refresh function
       />
@@ -311,7 +311,7 @@ const ProjectDetailsContent: React.FC<ProjectDetailsContentProps> = ({
         isOpen={showEditProject}
         onClose={() => setShowEditProject(false)}
         editProject={editProject.editProject}
-        owners={owners} 
+        owners={owners}
         consultants={consultants}
         onProjectChange={editProject.handleEditProjectChange}
         onSubmit={editProject.saveProjectEdit}
@@ -338,7 +338,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
   const [consultants, setConsultants] = useState<UserOption[]>(
     initialConsultants || []
   );
-  
+
   useEffect(() => {
     async function fetchUsers() {
       const users = await loadUsers();
@@ -356,12 +356,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({
     }
     fetchUsers();
   }, []);
-  
+
   return (
-    <ProjectProvider
-      project={project}
-      currentUser={currentUser}
-    >
+    <ProjectProvider project={project} currentUser={currentUser}>
       <ProjectDetailsContent
         subcontractors={subcontractors}
         subconsultants={subconsultants}

@@ -21,9 +21,9 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ projects, onViewProject ,subc
       try {
         // Get unique user IDs from projects
         const userIds = [...new Set([
-          ...projects.map(p => p.contractorId),
-          ...projects.map(p => p.ownerId),
-          ...projects.map(p => p.consultantId)
+          ...projects.map(p => p.contractor_id),
+          ...projects.map(p => p.owner_id),
+          ...projects.map(p => p.consultant_id)
         ].filter(Boolean))]; // Filter out null/undefined values
 
         const names: {[key: string]: string} = {};
@@ -85,8 +85,8 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({ projects, onViewProject ,subc
                   <td className="p-2">{project.timeElapsed || 0} يوم</td>
                   <td className="p-2">{project.expectedDays || 0} يوم</td>
                   <td className="p-2">{getProjectStatus(project)}</td>
-                  <td className="p-2">{getUserDisplayName(project.contractorId)}</td>
-                  <td className="p-2">{getUserDisplayName(project.ownerId)}</td>
+                  <td className="p-2">{getUserDisplayName(project.contractor_id)}</td>
+                  <td className="p-2">{getUserDisplayName(project.owner_id)}</td>
                   <td className="p-2 flex gap-2">
                     <Button 
                       variant="ghost" 

@@ -92,9 +92,13 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   }, [isOpen, toast]);
 
   const handleFormChange = (e: any) => {
+    const { name, value } = e.target;
+    if (name === "contractorId") {
+      console.log("Contractor selected:", value);
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
@@ -123,7 +127,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       const expectedDays = calculateExpectedDays(formData.start, formData.end);
 
       const newProject: Project = {
-        id: '',
+        id: "",
 
         // Basic project info
         name: formData.name,
@@ -150,20 +154,43 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         created_at: new Date().toISOString(),
 
         // Financial fields with correct names
-        contractValue: formData.contractValue ? parseFloat(formData.contractValue) : 0,
-        contract_value: formData.contractValue ? parseFloat(formData.contractValue) : 0, // Add database field name
+        contractValue: formData.contractValue
+          ? parseFloat(formData.contractValue)
+          : 0,
+        contract_value: formData.contractValue
+          ? parseFloat(formData.contractValue)
+          : 0, // Add database field name
 
-        advancePaymentPercentage: formData.advancePaymentPercentage ? parseFloat(formData.advancePaymentPercentage) : 0,
-        advance_payment_percentage: formData.advancePaymentPercentage ? parseFloat(formData.advancePaymentPercentage) : 0, // Add database field name
+        advancePaymentPercentage: formData.advancePaymentPercentage
+          ? parseFloat(formData.advancePaymentPercentage)
+          : 0,
+        advance_payment_percentage: formData.advancePaymentPercentage
+          ? parseFloat(formData.advancePaymentPercentage)
+          : 0, // Add database field name
 
-        workGuaranteePercentage: formData.workGuaranteePercentage ? parseFloat(formData.workGuaranteePercentage) : 0,
-        work_guarantee_percentage: formData.workGuaranteePercentage ? parseFloat(formData.workGuaranteePercentage) : 0, // Add database field name
+        workGuaranteePercentage: formData.workGuaranteePercentage
+          ? parseFloat(formData.workGuaranteePercentage)
+          : 0,
+        work_guarantee_percentage: formData.workGuaranteePercentage
+          ? parseFloat(formData.workGuaranteePercentage)
+          : 0, // Add database field name
 
-        materialDeliveryPaymentPercentage: formData.materialDeliveryPaymentPercentage ? parseFloat(formData.materialDeliveryPaymentPercentage) : 0,
-        material_delivery_payment_percentage: formData.materialDeliveryPaymentPercentage ? parseFloat(formData.materialDeliveryPaymentPercentage) : 0, // Add database field name
+        materialDeliveryPaymentPercentage:
+          formData.materialDeliveryPaymentPercentage
+            ? parseFloat(formData.materialDeliveryPaymentPercentage)
+            : 0,
+        material_delivery_payment_percentage:
+          formData.materialDeliveryPaymentPercentage
+            ? parseFloat(formData.materialDeliveryPaymentPercentage)
+            : 0, // Add database field name
 
-        completedWorkPaymentPercentage: formData.completedWorkPaymentPercentage ? parseFloat(formData.completedWorkPaymentPercentage) : 0,
-        completed_work_payment_percentage: formData.completedWorkPaymentPercentage ? parseFloat(formData.completedWorkPaymentPercentage) : 0, // Add database field name
+        completedWorkPaymentPercentage: formData.completedWorkPaymentPercentage
+          ? parseFloat(formData.completedWorkPaymentPercentage)
+          : 0,
+        completed_work_payment_percentage:
+          formData.completedWorkPaymentPercentage
+            ? parseFloat(formData.completedWorkPaymentPercentage)
+            : 0, // Add database field name
 
         // Optional fields with defaults
         electricalconsultantid: null,
@@ -172,7 +199,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         electricalcontractorid: null,
         architectcontractorid: null,
         mechanicalcontractorid: null,
-        created_by: user.id
+        created_by: user.id,
       };
       const success = await saveProject(newProject);
       if (success) {
@@ -270,9 +297,34 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       onClose={handleClose}
       title="إنشاء مشروع جديد"
       size="lg"
+      footerActions={
+        <div className="flex justify-end gap-4">
+          <Button
+            type="submit"
+            form="create-project-form"
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-800 text-white px-8 py-2 rounded font-bold disabled:opacity-50"
+          >
+            {isSaving ? "جاري الحفظ..." : "حفظ المشروع"}
+          </Button>
+
+          <Button
+            variant="default"
+            onClick={handleClose}
+            className="text-base sm:text-lg px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded shadow-md"
+            disabled={isSaving}
+          >
+            إغلاق
+          </Button>
+        </div>
+      }
     >
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="p-6 border-0 shadow-none">
+        <form
+          id="create-project-form"
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
           <FormField
             label="اسم المشروع"
             name="name"
@@ -311,16 +363,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            {/* <FormField
-              label="الاستشاري العام"
-              name="generalConsultantId"
-              type="select"
-              options={generalConsultants}
-              value={formData.generalConsultantId}
-              onChange={handleFormChange}
-              required
-            /> */}
-            {/* تبتبتبت */}
             <FormField
               label="الاستشاري المشرف"
               name="consultantId"
@@ -341,14 +383,13 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             />
             <FormField
               label=" المقاول"
-              name="contractorId" //////contractorsId
+              name="contractorId"
               type="select"
               options={contractors}
               value={formData.contractorId}
               onChange={handleFormChange}
               required
             />
-            {/* تبتبتبت */}
           </div>
 
           {/* Financial Information Section */}
@@ -421,26 +462,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 />
               </div>
             </div>
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t">
-            <Button
-              type="submit"
-              disabled={isSaving}
-              className="bg-blue-600 hover:bg-blue-800 text-white px-8 py-2 rounded font-bold disabled:opacity-50"
-            >
-              {isSaving ? "جاري الحفظ..." : "حفظ المشروع"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isSaving}
-              className="px-8 py-2"
-            >
-              إلغاء
-            </Button>
           </div>
         </form>
       </Card>

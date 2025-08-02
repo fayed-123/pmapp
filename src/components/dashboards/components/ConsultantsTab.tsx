@@ -48,9 +48,9 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({
   // const [newUserRole, setNewUserRole] = useState<
   //   "consultant" | "mainConsultant" | "generalConsultant"
   // >("consultant");
-   const [newUserRole, setNewUserRole] = useState<"consultant" | "mainConsultant">(
-    "consultant"
-  );
+  const [newUserRole, setNewUserRole] = useState<
+    "consultant" | "mainConsultant"
+  >("consultant");
 
   const handleAddUser = () => {
     if (newUserName.trim()) {
@@ -62,7 +62,7 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({
   // const filteredUsers = users.filter((user) =>
   //   ["consultant", "mainConsultant", "generalConsultant"].includes(user.role)
   // );
-    const filteredUsers = users.filter((user) =>
+  const filteredUsers = users.filter((user) =>
     ["consultant", "mainConsultant"].includes(user.role)
   );
 
@@ -75,14 +75,14 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({
         textColor: "text-purple-800",
         borderColor: "border-purple-200",
       };
-    // } else if (role === "generalConsultant") {
-    //   return {
-    //     text: "استشاري عام",
-    //     icon: Shield,
-    //     bgColor: "bg-indigo-100",
-    //     textColor: "text-indigo-800",
-    //     borderColor: "border-indigo-200",
-    //   };
+      // } else if (role === "generalConsultant") {
+      //   return {
+      //     text: "استشاري عام",
+      //     icon: Shield,
+      //     bgColor: "bg-indigo-100",
+      //     textColor: "text-indigo-800",
+      //     borderColor: "border-indigo-200",
+      //   };
     } else {
       return {
         text: "استشاري",
@@ -239,48 +239,53 @@ const ConsultantsTab: React.FC<ConsultantsTabProps> = ({
                         key={user.id}
                         className="border-b hover:bg-gray-50 transition-colors"
                       >
-                        <TableCell className="font-medium text-gray-900 py-4">
-                          <div className="flex items-center gap-2">
+                        <TableCell className="font-medium text-gray-900 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
                             {protected_user && (
                               <Shield className="h-4 w-4 text-purple-600" />
                             )}
                             {user.name}
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-600">
-                          <div className="flex items-center gap-2">
+                        <TableCell className="text-gray-600 text-center">
+                          <div className="flex items-center justify-center gap-2">
                             <Mail className="h-4 w-4" />
                             {user.email || "-"}
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-600">
-                          <div className="flex items-center gap-2">
+                        <TableCell className="text-gray-600 text-center">
+                          <div className="flex items-center justify-center gap-2">
                             <Phone className="h-4 w-4" />
                             {user.phone || "-"}
                           </div>
                         </TableCell>
-                        <TableCell>
+
+                        {/* عمود الدور مع عرض محدد */}
+                        <TableCell className="text-center max-w-[150px] w-[150px]">
                           <div
-                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${typeConfig.bgColor} ${typeConfig.textColor} ${typeConfig.borderColor} border`}
+                            className={`inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${typeConfig.bgColor} ${typeConfig.textColor} ${typeConfig.borderColor} border`}
                           >
                             <TypeIcon className="h-4 w-4" />
                             {typeConfig.text}
                           </div>
                         </TableCell>
-                        <TableCell>
+
+                        {/* عمود الحالة مع عرض محدد */}
+                        <TableCell className="text-center max-w-[130px] w-[130px]">
                           {user.approved ? (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                            <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                               <CheckCircle className="h-4 w-4" />
                               مفعل
                             </div>
                           ) : (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                            <div className="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
                               <Clock className="h-4 w-4" />
                               معلق
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
+
+                        <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
                             {!user.approved && (
                               <Button

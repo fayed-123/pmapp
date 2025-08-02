@@ -398,7 +398,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "غير محدد";
-    return new Date(dateString).toLocaleDateString("ar-SA");
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (

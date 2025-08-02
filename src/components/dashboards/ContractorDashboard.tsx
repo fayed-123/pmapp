@@ -25,10 +25,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  UserPlus, 
+import {
+  TrendingUp,
+  TrendingDown,
+  UserPlus,
   Trash2,
   FolderOpen,
   BarChart3,
@@ -36,16 +36,16 @@ import {
   Users,
   Eye,
   User2,
-  Briefcase
+  Briefcase,
 } from "lucide-react";
 // import { deleteSubcontractor } from "@/lib/db/projects";
 import { supabase } from "@/lib/supabase";
 
 // Tab enum
 enum Tab {
-  Projects = 'projects',
-  Subcontractors = 'subcontractors',
-  Stats = 'stats'
+  Projects = "projects",
+  Subcontractors = "subcontractors",
+  Stats = "stats",
 }
 
 const statusText = (status: string) => {
@@ -105,34 +105,34 @@ const ContractorDashboard: React.FC = () => {
   const tabs = [
     {
       id: Tab.Projects,
-      label: 'مشاريعي',
+      label: "مشاريعي",
       icon: FolderOpen,
-      color: 'indigo',
-      bgColor: 'bg-indigo-600',
-      lightBg: 'bg-indigo-100',
-      textColor: 'text-indigo-700',
-      hoverBg: 'hover:bg-indigo-200'
+      color: "indigo",
+      bgColor: "bg-indigo-600",
+      lightBg: "bg-indigo-100",
+      textColor: "text-indigo-700",
+      hoverBg: "hover:bg-indigo-200",
     },
     {
       id: Tab.Subcontractors,
-      label: 'المقاولون الفرعيون',
+      label: "المقاولون الفرعيون",
       icon: Users,
-      color: 'green',
-      bgColor: 'bg-green-600',
-      lightBg: 'bg-green-100',
-      textColor: 'text-green-700',
-      hoverBg: 'hover:bg-green-200'
+      color: "green",
+      bgColor: "bg-green-600",
+      lightBg: "bg-green-100",
+      textColor: "text-green-700",
+      hoverBg: "hover:bg-green-200",
     },
     {
       id: Tab.Stats,
-      label: 'إحصائيات عامة',
+      label: "إحصائيات عامة",
       icon: BarChart3,
-      color: 'yellow',
-      bgColor: 'bg-yellow-600',
-      lightBg: 'bg-yellow-100',
-      textColor: 'text-yellow-700',
-      hoverBg: 'hover:bg-yellow-200'
-    }
+      color: "yellow",
+      bgColor: "bg-yellow-600",
+      lightBg: "bg-yellow-100",
+      textColor: "text-yellow-700",
+      hoverBg: "hover:bg-yellow-200",
+    },
   ];
 
   // تحميل المشاريع + المقاولين الفرعين عند تحميل الصفحة أو تغير المستخدم
@@ -269,7 +269,7 @@ const ContractorDashboard: React.FC = () => {
   };
 
   const handleViewProject = (project: Project) => {
-    console.log(project)
+    console.log(project);
     setSelectedProject(project);
     setShowProjectDetails(true);
   };
@@ -362,28 +362,43 @@ const ContractorDashboard: React.FC = () => {
         <div>
           <h3 className="text-lg font-semibold text-gray-800">مشاريعي</h3>
           <p className="text-sm text-gray-600">
-            {projects.length > 0 
-              ? `لديك ${projects.length} مشروع` 
-              : 'لم يتم تعيينك في أي مشروع بعد'
-            }
+            {projects.length > 0
+              ? `لديك ${projects.length} مشروع`
+              : "لم يتم تعيينك في أي مشروع بعد"}
           </p>
         </div>
       </div>
 
       {projects.length > 0 ? (
-        <Card style={{padding: 0}} className="shadow-sm border-0 bg-white">
+        <Card style={{ padding: 0 }} className="shadow-sm border-0 bg-white">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="p-4 text-right font-semibold text-gray-700">اسم المشروع</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">المالك</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">الاستشاري</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">الوقت المنقضي</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">نسبة الانجاز</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">الأيام المتوقعة</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">الحالة</th>
-                  <th className="p-4 text-center font-semibold text-gray-700">الإجراءات</th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    اسم المشروع
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    المالك
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الاستشاري
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الوقت المنقضي
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    نسبة الانجاز
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الأيام المتوقعة
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الحالة
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -392,30 +407,47 @@ const ContractorDashboard: React.FC = () => {
                     key={project.id || `project-${index}`}
                     className="border-b hover:bg-gray-50 transition-colors"
                   >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
+                    <td className="p-4 text-center">
+                      <div className="flex flex-row items-center justify-center gap-3">
                         <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
                           <Briefcase className="w-4 h-4 text-indigo-600" />
                         </div>
-                        <span className="font-medium text-gray-800">{project.name}</span>
+                        <span className="font-medium text-gray-800">
+                          {project.name}
+                        </span>
                       </div>
                     </td>
-                    <td className="p-4 text-gray-600">{userNames[project.owner_id] || "-"}</td>
-                    <td className="p-4 text-gray-600">{userNames[project.consultant_id] || "-"}</td>
-                    <td className="p-4 text-gray-600">{project.timeElapsed || 0} يوم</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${
-                        (project.completion || 0) >= 90 ? 'bg-green-100 text-green-800' :
-                        (project.completion || 0) >= 70 ? 'bg-blue-100 text-blue-800' :
-                        (project.completion || 0) >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                    <td className="p-4 text-center text-gray-600">
+                      {userNames[project.owner_id] || "-"}
+                    </td>
+                    <td className="p-4 text-center text-gray-600">
+                      {userNames[project.consultant_id] || "-"}
+                    </td>
+                    <td className="p-4 text-center text-gray-600">
+                      {project.timeElapsed || 0} يوم
+                    </td>
+                    <td className="p-4 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${
+                          (project.completion || 0) >= 90
+                            ? "bg-green-100 text-green-800"
+                            : (project.completion || 0) >= 70
+                            ? "bg-blue-100 text-blue-800"
+                            : (project.completion || 0) >= 50
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {project.completion || 0}%
                       </span>
                     </td>
-                    <td className="p-4 text-gray-600">{project.expectedDays || 0} يوم</td>
-                    <td className="p-4">{getProjectStatus(project)}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-center text-gray-600">
+                      {project.expectedDays || 0} يوم
+                    </td>
+                    <td className="p-4 text-center">
+                      {getProjectStatus(project)}
+                    </td>
+                    <td className="p-4 text-center">
                       <div className="flex justify-center gap-2">
                         <Button
                           variant="ghost"
@@ -426,7 +458,6 @@ const ContractorDashboard: React.FC = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           عرض
                         </Button>
-
                       </div>
                     </td>
                   </tr>
@@ -440,8 +471,12 @@ const ContractorDashboard: React.FC = () => {
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Briefcase className="w-8 h-8 text-gray-400" />
           </div>
-          <h4 className="text-lg font-medium text-gray-800 mb-2">لا توجد مشاريع</h4>
-          <p className="text-gray-600">سيتم عرض المشاريع عند تعيينك كمقاول رئيسي</p>
+          <h4 className="text-lg font-medium text-gray-800 mb-2">
+            لا توجد مشاريع
+          </h4>
+          <p className="text-gray-600">
+            سيتم عرض المشاريع عند تعيينك كمقاول رئيسي
+          </p>
         </div>
       )}
     </div>
@@ -456,8 +491,12 @@ const ContractorDashboard: React.FC = () => {
             <UserPlus className="w-5 h-5 text-green-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">إضافة مقاول فرعي جديد</h3>
-            <p className="text-sm text-gray-600">أضف مقاول فرعي للمساعدة في تنفيذ المشاريع</p>
+            <h3 className="text-lg font-semibold text-gray-800">
+              إضافة مقاول فرعي جديد
+            </h3>
+            <p className="text-sm text-gray-600">
+              أضف مقاول فرعي للمساعدة في تنفيذ المشاريع
+            </p>
           </div>
         </div>
 
@@ -509,49 +548,74 @@ const ContractorDashboard: React.FC = () => {
             <Users className="w-5 h-5 text-gray-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">المقاولون الفرعيون</h3>
+            <h3 className="text-lg font-semibold text-gray-800">
+              المقاولون الفرعيون
+            </h3>
             <p className="text-sm text-gray-600">
-              {subcontractors.length > 0 
-                ? `لديك ${subcontractors.length} مقاول فرعي` 
-                : 'لم تقم بإضافة أي مقاول فرعي بعد'
-              }
+              {subcontractors.length > 0
+                ? `لديك ${subcontractors.length} مقاول فرعي`
+                : "لم تقم بإضافة أي مقاول فرعي بعد"}
             </p>
           </div>
         </div>
 
         {subcontractors.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto text-center">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="p-4 text-right font-semibold text-gray-700">الاسم</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">نوع التخصص</th>
-                  <th className="p-4 text-right font-semibold text-gray-700">تاريخ الإضافة</th>
-                  <th className="p-4 text-center font-semibold text-gray-700">الإجراءات</th>
+                  <th className="p-4 text-right font-semibold text-gray-700 pr-10">
+                    الاسم
+                  </th>
+                  <th className="p-4 text-right font-semibold text-gray-700">
+                    نوع التخصص
+                  </th>
+                  <th className="p-4 text-right font-semibold text-gray-700">
+                    تاريخ الإضافة
+                  </th>
+                  <th className="p-4 text-center font-semibold text-gray-700">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {subcontractors.map((sub, index) => (
-                  <tr key={sub.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
+            
+                  <tr
+                    key={sub.id}
+                    className="border-b hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="p-4 text-center">
+                      <div
+                        className="flex items-center justify-center gap-3"
+                        style={{ lineHeight: 1 }}
+                      >
                         <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <User2 className="w-4 h-4 text-green-600" />
+                          <User2 className="w-5 h-5 text-green-600" />
                         </div>
-                        <span className="font-medium text-gray-800">{sub.name}</span>
+                        <span className="font-medium text-gray-800 leading-none flex items-center">
+                          {sub.name}
+                        </span>
                       </div>
                     </td>
+
                     <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        sub.type === 'معماري' ? 'bg-blue-100 text-blue-800' :
-                        sub.type === 'ميكانيكي' ? 'bg-orange-100 text-orange-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          sub.type === "معماري"
+                            ? "bg-blue-100 text-blue-800"
+                            : sub.type === "ميكانيكي"
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
                         {sub.type}
                       </span>
                     </td>
                     <td className="p-4 text-gray-600">
-                      {sub.created_at ? new Date(sub.created_at).toLocaleDateString('ar-SA') : '-'}
+                      {sub.created_at
+                        ? new Date(sub.created_at).toLocaleDateString()
+                        : "-"}
                     </td>
                     <td className="p-4">
                       <div className="flex justify-center">
@@ -576,10 +640,14 @@ const ContractorDashboard: React.FC = () => {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-gray-400" />
             </div>
-            <h4 className="text-lg font-medium text-gray-800 mb-2">لا يوجد مقاولون فرعيون</h4>
-            <p className="text-gray-600 mb-4">ابدأ بإضافة مقاول فرعي للمساعدة في تنفيذ المشاريع</p>
+            <h4 className="text-lg font-medium text-gray-800 mb-2">
+              لا يوجد مقاولون فرعيون
+            </h4>
+            <p className="text-gray-600 mb-4">
+              ابدأ بإضافة مقاول فرعي للمساعدة في تنفيذ المشاريع
+            </p>
             <Button
-              onClick={() => setNewSubcontractorName('')}
+              onClick={() => setNewSubcontractorName("")}
               variant="outline"
               className="border-green-200 text-green-600 hover:bg-green-50"
             >
@@ -601,7 +669,9 @@ const ContractorDashboard: React.FC = () => {
               <Briefcase className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-indigo-600">{projects.length}</div>
+              <div className="text-2xl font-bold text-indigo-600">
+                {projects.length}
+              </div>
               <div className="text-sm text-gray-600">إجمالي المشاريع</div>
             </div>
           </div>
@@ -613,7 +683,9 @@ const ContractorDashboard: React.FC = () => {
               <Users className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">{subcontractors.length}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {subcontractors.length}
+              </div>
               <div className="text-sm text-gray-600">المقاولون الفرعيون</div>
             </div>
           </div>
@@ -626,10 +698,15 @@ const ContractorDashboard: React.FC = () => {
             </div>
             <div>
               <div className="text-2xl font-bold text-yellow-600">
-                {projects.length > 0 
-                  ? Math.round(projects.reduce((sum, p) => sum + (p.completion || 0), 0) / projects.length)
-                  : 0
-                }%
+                {projects.length > 0
+                  ? Math.round(
+                      projects.reduce(
+                        (sum, p) => sum + (p.completion || 0),
+                        0
+                      ) / projects.length
+                    )
+                  : 0}
+                %
               </div>
               <div className="text-sm text-gray-600">متوسط الإنجاز</div>
             </div>
@@ -661,8 +738,12 @@ const ContractorDashboard: React.FC = () => {
             <Settings className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">لوحة تحكم المقاول</h2>
-            <p className="text-gray-600 text-sm mt-1">إدارة المشاريع والمقاولين الفرعيين</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+              لوحة تحكم المقاول
+            </h2>
+            <p className="text-gray-600 text-sm mt-1">
+              إدارة المشاريع والمقاولين الفرعيين
+            </p>
           </div>
         </div>
       </div>
@@ -674,7 +755,7 @@ const ContractorDashboard: React.FC = () => {
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            
+
             return (
               <Button
                 key={tab.id}
@@ -699,7 +780,7 @@ const ContractorDashboard: React.FC = () => {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
-              
+
               return (
                 <Button
                   key={tab.id}
@@ -722,9 +803,7 @@ const ContractorDashboard: React.FC = () => {
 
       {/* Content Area - Same as other dashboards */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 sm:p-6 lg:p-8">
-          {renderContent()}
-        </div>
+        <div className="p-4 sm:p-6 lg:p-8">{renderContent()}</div>
       </div>
 
       {/* Project Details Modal */}

@@ -225,7 +225,7 @@ const ConsultantDashboard: React.FC = () => {
                             </span>
                           </td>
                           <td className="p-4 text-gray-600">
-                            {sub.created_at ? new Date(sub.created_at).toLocaleDateString('ar-SA') : '-'}
+                            {sub.created_at ? new Date(sub.created_at).toLocaleDateString() : '-'}
                           </td>
                           <td className="p-4">
                             <div className="flex justify-center">

@@ -22,6 +22,7 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { canUserEdit } from "@/lib/db/items";
 
 interface ItemsCardsProps {
   items: ProjectItem[];
@@ -412,7 +413,7 @@ const ItemsCards: React.FC<ItemsCardsProps> = ({
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "غير محدد";
-    return new Date(dateString).toLocaleDateString("ar-SA");
+    return new Date(dateString).toLocaleDateString();
   };
 
   // Count items that need review by current user
@@ -543,9 +544,10 @@ const ItemsCards: React.FC<ItemsCardsProps> = ({
               )}
 
               {/* Actions */}
+              {(canUserEdit(item, currentUser, project) || canReview || canReviewThisItem) && (
               <div className="flex items-center gap-2 pt-2 border-t">
                 {/* Edit/View Actions */}
-                {(canEdit || canReview) && (
+                {(canUserEdit(item, currentUser, project) || canReview) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -556,7 +558,7 @@ const ItemsCards: React.FC<ItemsCardsProps> = ({
                   </Button>
                 )}
 
-                {canEdit && (
+                {canUserEdit(item, currentUser, project)  && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -593,6 +595,7 @@ const ItemsCards: React.FC<ItemsCardsProps> = ({
                   </div>
                 )}
               </div>
+              )}
             </Card>
           );
         })}

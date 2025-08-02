@@ -48,9 +48,10 @@ const ProjectEditDialog: React.FC<ProjectEditDialogProps> = ({
         .from('users')
         .select('id, name, role, type')
         .eq('approved', true)
-        .order('name');
+        .order('name');    
 
       if (error) throw error;
+      console.log('Loaded users:', data);
       setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -117,6 +118,7 @@ const ProjectEditDialog: React.FC<ProjectEditDialogProps> = ({
       setIsLoading(false);
     }
   };
+console.log("All Users:", users);
 
 
   const getUsersByRole = (role: string, type?: string) => {

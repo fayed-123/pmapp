@@ -51,6 +51,11 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
   const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const toggleRow = (projectId: string) => {
+    setExpandedRow(expandedRow === projectId ? null : projectId);
+  };
 
   useEffect(() => {
     const loadUserNames = async () => {
@@ -61,9 +66,9 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
           ...new Set(
             [
               ...projects.map((p) => p.generalConsultantId),
-              ...projects.map((p) => p.contractorId),
-              ...projects.map((p) => p.ownerId),
-              ...projects.map((p) => p.consultantId),
+              ...projects.map((p) => p.contractor_id),
+              ...projects.map((p) => p.owner_id),
+              ...projects.map((p) => p.consultant_id),
             ].filter(Boolean)
           ),
         ]; // Filter out null/undefined values
@@ -235,9 +240,6 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                   <TableHead className="text-right font-semibold text-gray-700">
                     المالك
                   </TableHead>
-                  {/* <TableHead className="text-right font-semibold text-gray-700">
-                    الاستشاري العام
-                  </TableHead> */}
                   <TableHead className="text-right font-semibold text-gray-700">
                     الاستشاري
                   </TableHead>
@@ -253,7 +255,7 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                       key={project.id || `project-${index}`}
                       className="border-b hover:bg-gray-50 transition-colors"
                     >
-                      <TableCell className="font-medium text-gray-900 py-4">
+                      <TableCell className="font-medium text-gray-900 py-4 text-center">
                         {project.name}
                       </TableCell>
                       <TableCell>
@@ -279,16 +281,13 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                       </TableCell>
                       <TableCell>{getProjectStatus(project)}</TableCell>
                       <TableCell className="text-gray-600">
-                        {getUserDisplayName(project.contractorId)}
+                        {getUserDisplayName(project.contractor_id)}
                       </TableCell>
                       <TableCell className="text-gray-600">
-                        {getUserDisplayName(project.ownerId)}
+                        {getUserDisplayName(project.owner_id)}
                       </TableCell>
-                      {/* <TableCell className="text-gray-600">
-                        {getUserDisplayName(project.generalConsultantId)}
-                      </TableCell> */}
                       <TableCell className="text-gray-600">
-                        {getUserDisplayName(project.consultantId)}
+                        {getUserDisplayName(project.consultant_id)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-2">
@@ -406,28 +405,19 @@ const ProjectsListTab: React.FC<ProjectsListTabProps> = ({
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
                     <span>
-                      المقاول: {getUserDisplayName(project.contractorId)}
+                      المقاول: {getUserDisplayName(project.contractorid)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
-                    <span>المالك: {getUserDisplayName(project.ownerId)}</span>
+                    <span>المالك: {getUserDisplayName(project.owner_id)}</span>
                   </div>
                 </div>
-                {/* <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      الاستشاري العام:{" "}
-                      {getUserDisplayName(project.generalConsultantId)}
-                    </span>
-                  </div>
-                </div> */}
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
                     <span>
-                      الاستشاري: {getUserDisplayName(project.consultantId)}
+                      الاستشاري: {getUserDisplayName(project.consultant_id)}
                     </span>
                   </div>
                 </div>
